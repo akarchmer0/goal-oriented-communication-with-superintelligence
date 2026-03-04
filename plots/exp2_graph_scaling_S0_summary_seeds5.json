@@ -11,85 +11,85 @@
     "aggregate": {
       "final_success_rate": {
         "count": 5,
-        "mean": 0.9992000000000001,
-        "std": 0.0010954451150103333,
-        "min": 0.998,
+        "mean": 1.0,
+        "std": 0.0,
+        "min": 1.0,
         "max": 1.0
       },
       "episodes_to_80_reached_only": {
         "count": 5,
-        "mean": 6753.2,
-        "std": 4418.213066387812,
+        "mean": 2088.8,
+        "std": 2864.949249114197,
         "min": 1.0,
-        "max": 12386.0
+        "max": 5485.0
       },
       "fraction_reached_80": 1.0
     },
     "per_seed": {
       "1022272958": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1022272958",
-        "episodes_to_80": 12386,
-        "final_success_rate": 0.998,
-        "avg_path_len_all_episodes": 5.284889489350024,
-        "avg_shortest_dist_all_tasks": 5.016777142133373,
-        "num_points": 189484,
+        "episodes_to_80": 1,
+        "final_success_rate": 1.0,
+        "avg_path_len_all_episodes": 5.096346055979644,
+        "avg_shortest_dist_all_tasks": 4.982020356234097,
+        "num_points": 196500,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 189484
+        "episodes": 196500
       },
       "1273923372": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1273923372",
-        "episodes_to_80": 6652,
+        "episodes_to_80": 4956,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 5.118965587748175,
-        "avg_shortest_dist_all_tasks": 4.9691455210910505,
-        "num_points": 195628,
+        "avg_path_len_all_episodes": 5.0857888695899485,
+        "avg_shortest_dist_all_tasks": 4.978415658550954,
+        "num_points": 196902,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 195628
+        "episodes": 196902
       },
       "615658845": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed615658845",
-        "episodes_to_80": 7421,
+        "episodes_to_80": 1,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 5.157743475640848,
-        "avg_shortest_dist_all_tasks": 4.984636144975458,
-        "num_points": 194157,
+        "avg_path_len_all_episodes": 5.079498650759835,
+        "avg_shortest_dist_all_tasks": 4.978026660174082,
+        "num_points": 197148,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 194157
+        "episodes": 197148
       },
       "81947047": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed81947047",
-        "episodes_to_80": 7306,
-        "final_success_rate": 0.998,
-        "avg_path_len_all_episodes": 5.190444351147808,
-        "avg_shortest_dist_all_tasks": 5.015901893403409,
-        "num_points": 192933,
+        "episodes_to_80": 1,
+        "final_success_rate": 1.0,
+        "avg_path_len_all_episodes": 5.1071987759785795,
+        "avg_shortest_dist_all_tasks": 4.99124824684432,
+        "num_points": 196075,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 192933
+        "episodes": 196075
       },
       "1701248448": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1701248448",
-        "episodes_to_80": 1,
+        "episodes_to_80": 5485,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 5.166404408009122,
-        "avg_shortest_dist_all_tasks": 4.9691635410593875,
-        "num_points": 193829,
+        "avg_path_len_all_episodes": 5.110841750154386,
+        "avg_shortest_dist_all_tasks": 4.985995498553106,
+        "num_points": 195937,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 193829
+        "episodes": 195937
       }
     }
   },
@@ -105,85 +105,85 @@
     "aggregate": {
       "final_success_rate": {
         "count": 5,
-        "mean": 0.8884000000000001,
-        "std": 0.2495451862889765,
-        "min": 0.442,
+        "mean": 0.9996,
+        "std": 0.0008944271909999166,
+        "min": 0.998,
         "max": 1.0
       },
       "episodes_to_80_reached_only": {
-        "count": 4,
-        "mean": 7655.25,
-        "std": 728.1929117113586,
-        "min": 6939.0,
-        "max": 8360.0
+        "count": 5,
+        "mean": 4876.4,
+        "std": 277.3180484570018,
+        "min": 4583.0,
+        "max": 5326.0
       },
-      "fraction_reached_80": 0.8
+      "fraction_reached_80": 1.0
     },
     "per_seed": {
       "1022272958": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1022272958",
-        "episodes_to_80": null,
-        "final_success_rate": 0.442,
-        "avg_path_len_all_episodes": 10.680942526773904,
-        "avg_shortest_dist_all_tasks": 6.5900179203823015,
-        "num_points": 93748,
+        "episodes_to_80": 4766,
+        "final_success_rate": 1.0,
+        "avg_path_len_all_episodes": 6.800038028494208,
+        "avg_shortest_dist_all_tasks": 6.610622173328444,
+        "num_points": 147258,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 93748
+        "episodes": 147258
       },
       "1273923372": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1273923372",
-        "episodes_to_80": 6939,
-        "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 6.901030970462972,
-        "avg_shortest_dist_all_tasks": 6.610029909169849,
-        "num_points": 145106,
+        "episodes_to_80": 4583,
+        "final_success_rate": 0.998,
+        "avg_path_len_all_episodes": 6.809806188371303,
+        "avg_shortest_dist_all_tasks": 6.631696701802108,
+        "num_points": 147050,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 145106
+        "episodes": 147050
       },
       "615658845": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed615658845",
-        "episodes_to_80": 8360,
+        "episodes_to_80": 4798,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 7.044395202419894,
-        "avg_shortest_dist_all_tasks": 6.676923076923077,
-        "num_points": 142155,
+        "avg_path_len_all_episodes": 6.806348343245539,
+        "avg_shortest_dist_all_tasks": 6.621328802039082,
+        "num_points": 147125,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 142155
+        "episodes": 147125
       },
       "81947047": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed81947047",
-        "episodes_to_80": 7122,
+        "episodes_to_80": 4909,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 6.954021152630885,
-        "avg_shortest_dist_all_tasks": 6.646308011749919,
-        "num_points": 144001,
+        "avg_path_len_all_episodes": 6.837883423014941,
+        "avg_shortest_dist_all_tasks": 6.642054300620032,
+        "num_points": 146444,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 144001
+        "episodes": 146444
       },
       "1701248448": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1701248448",
-        "episodes_to_80": 8200,
+        "episodes_to_80": 5326,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 7.064701151371486,
-        "avg_shortest_dist_all_tasks": 6.700622248560785,
-        "num_points": 141744,
+        "avg_path_len_all_episodes": 6.825050094736985,
+        "avg_shortest_dist_all_tasks": 6.613970638350077,
+        "num_points": 146722,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 141744
+        "episodes": 146722
       }
     }
   },
@@ -199,85 +199,85 @@
     "aggregate": {
       "final_success_rate": {
         "count": 5,
-        "mean": 0.9987999999999999,
-        "std": 0.0017888543819998333,
-        "min": 0.996,
+        "mean": 0.9996,
+        "std": 0.0008944271909999166,
+        "min": 0.998,
         "max": 1.0
       },
       "episodes_to_80_reached_only": {
         "count": 5,
-        "mean": 9178.6,
-        "std": 2448.623245826111,
-        "min": 7412.0,
-        "max": 13052.0
+        "mean": 5541.0,
+        "std": 435.32114582225387,
+        "min": 5127.0,
+        "max": 6013.0
       },
       "fraction_reached_80": 1.0
     },
     "per_seed": {
       "1022272958": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1022272958",
-        "episodes_to_80": 13052,
+        "episodes_to_80": 5975,
         "final_success_rate": 0.998,
-        "avg_path_len_all_episodes": 9.284281091505873,
-        "avg_shortest_dist_all_tasks": 8.376324744323187,
-        "num_points": 107851,
+        "avg_path_len_all_episodes": 8.698675237805672,
+        "avg_shortest_dist_all_tasks": 8.308873734960692,
+        "num_points": 115115,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 107851
+        "episodes": 115115
       },
       "1273923372": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1273923372",
-        "episodes_to_80": 7412,
+        "episodes_to_80": 5127,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 8.816321679183652,
-        "avg_shortest_dist_all_tasks": 8.31548085473547,
-        "num_points": 113579,
+        "avg_path_len_all_episodes": 8.65849841332976,
+        "avg_shortest_dist_all_tasks": 8.328713110997743,
+        "num_points": 115651,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 113579
+        "episodes": 115651
       },
       "615658845": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed615658845",
-        "episodes_to_80": 7616,
-        "final_success_rate": 0.996,
-        "avg_path_len_all_episodes": 8.828343207786713,
-        "avg_shortest_dist_all_tasks": 8.30277542671745,
-        "num_points": 113424,
+        "episodes_to_80": 5460,
+        "final_success_rate": 1.0,
+        "avg_path_len_all_episodes": 8.656862999368899,
+        "avg_shortest_dist_all_tasks": 8.305538985571145,
+        "num_points": 115671,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 113424
+        "episodes": 115671
       },
       "81947047": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed81947047",
-        "episodes_to_80": 7628,
+        "episodes_to_80": 5130,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 8.80572483841182,
-        "avg_shortest_dist_all_tasks": 8.288932858461944,
-        "num_points": 113715,
+        "avg_path_len_all_episodes": 8.650934757066832,
+        "avg_shortest_dist_all_tasks": 8.320806551938627,
+        "num_points": 115752,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 113715
+        "episodes": 115752
       },
       "1701248448": {
         "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1701248448",
-        "episodes_to_80": 10185,
+        "episodes_to_80": 6013,
         "final_success_rate": 1.0,
-        "avg_path_len_all_episodes": 9.007268082503531,
-        "avg_shortest_dist_all_tasks": 8.292801180163892,
-        "num_points": 111171,
+        "avg_path_len_all_episodes": 8.68488338811938,
+        "avg_shortest_dist_all_tasks": 8.289478477323781,
+        "num_points": 115297,
         "running_avg_window": 500,
         "final_cipher_accuracy": null,
         "updates": 489,
         "steps": 1001472,
-        "episodes": 111171
+        "episodes": 115297
       }
     }
   }

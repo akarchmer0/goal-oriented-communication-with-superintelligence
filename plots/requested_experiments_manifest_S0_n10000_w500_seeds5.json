@@ -9,7 +9,7 @@
       8,
       16
     ],
-    "t_pool": 256,
+    "t_pool": 1024,
     "sigma_size": 32,
     "n_values": [
       1000,
@@ -43,7 +43,7 @@
       1.0,
       2.0
     ],
-    "fst_k": 2,
+    "fst_k": 1,
     "fst_k_values": [
       1,
       2,
@@ -115,28 +115,28 @@
     "fst_cipher": [
       {
         "seed": 1022272958,
-        "run_name": "exp1_S0_fst_cipher_k2_n10000_w500_seed1022272958",
-        "run_dir": "v2/runs/exp1_S0_fst_cipher_k2_n10000_w500_seed1022272958"
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1022272958",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1022272958"
       },
       {
         "seed": 1273923372,
-        "run_name": "exp1_S0_fst_cipher_k2_n10000_w500_seed1273923372",
-        "run_dir": "v2/runs/exp1_S0_fst_cipher_k2_n10000_w500_seed1273923372"
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1273923372",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1273923372"
       },
       {
         "seed": 615658845,
-        "run_name": "exp1_S0_fst_cipher_k2_n10000_w500_seed615658845",
-        "run_dir": "v2/runs/exp1_S0_fst_cipher_k2_n10000_w500_seed615658845"
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed615658845",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed615658845"
       },
       {
         "seed": 81947047,
-        "run_name": "exp1_S0_fst_cipher_k2_n10000_w500_seed81947047",
-        "run_dir": "v2/runs/exp1_S0_fst_cipher_k2_n10000_w500_seed81947047"
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed81947047",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed81947047"
       },
       {
         "seed": 1701248448,
-        "run_name": "exp1_S0_fst_cipher_k2_n10000_w500_seed1701248448",
-        "run_dir": "v2/runs/exp1_S0_fst_cipher_k2_n10000_w500_seed1701248448"
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1701248448",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1701248448"
       }
     ],
     "random_message": [

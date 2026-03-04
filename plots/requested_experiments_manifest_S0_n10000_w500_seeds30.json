@@ -1,0 +1,4049 @@
+{
+  "version": 2,
+  "config": {
+    "n": 10000,
+    "d": 4,
+    "d_values": [
+      2,
+      4,
+      8,
+      16
+    ],
+    "t_pool": 1024,
+    "sigma_size": 32,
+    "n_values": [
+      1000,
+      10000,
+      100000
+    ],
+    "sensing": "S0",
+    "train_steps": 1000000,
+    "n_env": 32,
+    "running_avg_window": 500,
+    "base_seed": 0,
+    "num_seeds": 30,
+    "seeds_used": [
+      67171150,
+      44203898,
+      1273923356,
+      1529779842,
+      178573495,
+      1108629832,
+      1631707098,
+      1298831484,
+      1726357842,
+      81947046,
+      554694088,
+      1007253934,
+      1870144834,
+      1626540459,
+      350534581,
+      1341753080,
+      1714808544,
+      33055270,
+      1264541584,
+      351311240,
+      1119834882,
+      1459310888,
+      1082922440,
+      1693150474,
+      1701248426,
+      1213271539,
+      1458993108,
+      1087249973,
+      1825511135,
+      615658837
+    ],
+    "logdir": "v2/runs",
+    "lie_probs": [
+      0.0,
+      0.1,
+      0.25,
+      0.5
+    ],
+    "noise_sigmas": [
+      0.0,
+      0.1,
+      0.5,
+      1.0,
+      2.0
+    ],
+    "fst_k": 1,
+    "fst_k_values": [
+      1,
+      2,
+      4,
+      8
+    ],
+    "oracle_mode_exp2": "fst_cipher",
+    "oracle_mode_exp3": "fixed_cipher",
+    "oracle_mode_exp4": "fst_cipher",
+    "oracle_mode_exp2_3_4": "mixed",
+    "binary_signal_sensing": "S1",
+    "binary_signal_step_penalty": 0.0
+  },
+  "experiment_1": {
+    "fixed_cipher": [
+      {
+        "seed": 67171150,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp1_S0_fixed_cipher_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp1_S0_fixed_cipher_n10000_w500_seed615658837"
+      }
+    ],
+    "fresh_cipher": [
+      {
+        "seed": 67171150,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp1_S0_fresh_cipher_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp1_S0_fresh_cipher_n10000_w500_seed615658837"
+      }
+    ],
+    "fst_cipher": [
+      {
+        "seed": 67171150,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp1_S0_fst_cipher_k1_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp1_S0_fst_cipher_k1_n10000_w500_seed615658837"
+      }
+    ],
+    "random_message": [
+      {
+        "seed": 67171150,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp1_S0_random_message_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp1_S0_random_message_n10000_w500_seed615658837"
+      }
+    ],
+    "no_message": [
+      {
+        "seed": 67171150,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp1_S0_no_oracle_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp1_S0_no_oracle_n10000_w500_seed615658837"
+      }
+    ]
+  },
+  "experiment_2": {
+    "1000": [
+      {
+        "seed": 67171150,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed67171150",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed44203898",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed178573495",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed81947046",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed554694088",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed350534581",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed33055270",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed351311240",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp2_S0_fst_cipher_n1000_w500_seed615658837",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n1000_w500_seed615658837"
+      }
+    ],
+    "10000": [
+      {
+        "seed": 67171150,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp2_S0_fst_cipher_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n10000_w500_seed615658837"
+      }
+    ],
+    "100000": [
+      {
+        "seed": 67171150,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed67171150",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed44203898",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed178573495",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed81947046",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed554694088",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed350534581",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed33055270",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed351311240",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp2_S0_fst_cipher_n100000_w500_seed615658837",
+        "run_dir": "v2/runs/exp2_S0_fst_cipher_n100000_w500_seed615658837"
+      }
+    ]
+  },
+  "experiment_3": {
+    "P(lie)=0": [
+      {
+        "seed": 67171150,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p0_n10000_w500_seed615658837"
+      }
+    ],
+    "P(lie)=0.1": [
+      {
+        "seed": 67171150,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p1_n10000_w500_seed615658837"
+      }
+    ],
+    "P(lie)=0.25": [
+      {
+        "seed": 67171150,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p25_n10000_w500_seed615658837"
+      }
+    ],
+    "P(lie)=0.5": [
+      {
+        "seed": 67171150,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp3_S0_fixed_cipher_plie0p5_n10000_w500_seed615658837"
+      }
+    ]
+  },
+  "experiment_4": {
+    "\u03c3=0": [
+      {
+        "seed": 67171150,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp4_S0_fst_cipher_noise0_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0_n10000_w500_seed615658837"
+      }
+    ],
+    "\u03c3=0.1": [
+      {
+        "seed": 67171150,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp4_S0_fst_cipher_noise0p1_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p1_n10000_w500_seed615658837"
+      }
+    ],
+    "\u03c3=0.5": [
+      {
+        "seed": 67171150,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp4_S0_fst_cipher_noise0p5_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise0p5_n10000_w500_seed615658837"
+      }
+    ],
+    "\u03c3=1": [
+      {
+        "seed": 67171150,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp4_S0_fst_cipher_noise1_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise1_n10000_w500_seed615658837"
+      }
+    ],
+    "\u03c3=2": [
+      {
+        "seed": 67171150,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp4_S0_fst_cipher_noise2_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp4_S0_fst_cipher_noise2_n10000_w500_seed615658837"
+      }
+    ],
+    "Binary Signal (no noise)": [
+      {
+        "seed": 67171150,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp4_S1_fst_cipher_binary_no_noise_n10000_w500_seed615658837"
+      }
+    ]
+  },
+  "experiment_5": {
+    "1 Hidden States": [
+      {
+        "seed": 67171150,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp5_S0_fst_cipher_k1_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k1_n10000_w500_seed615658837"
+      }
+    ],
+    "2 Hidden States": [
+      {
+        "seed": 67171150,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp5_S0_fst_cipher_k2_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k2_n10000_w500_seed615658837"
+      }
+    ],
+    "4 Hidden States": [
+      {
+        "seed": 67171150,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp5_S0_fst_cipher_k4_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k4_n10000_w500_seed615658837"
+      }
+    ],
+    "8 Hidden States": [
+      {
+        "seed": 67171150,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp5_S0_fst_cipher_k8_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp5_S0_fst_cipher_k8_n10000_w500_seed615658837"
+      }
+    ]
+  },
+  "experiment_6": {
+    "d=2": [
+      {
+        "seed": 67171150,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp6_S0_fst_cipher_d2_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d2_n10000_w500_seed615658837"
+      }
+    ],
+    "d=4": [
+      {
+        "seed": 67171150,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp6_S0_fst_cipher_d4_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d4_n10000_w500_seed615658837"
+      }
+    ],
+    "d=8": [
+      {
+        "seed": 67171150,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp6_S0_fst_cipher_d8_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d8_n10000_w500_seed615658837"
+      }
+    ],
+    "d=16": [
+      {
+        "seed": 67171150,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed67171150",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed67171150"
+      },
+      {
+        "seed": 44203898,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed44203898",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed44203898"
+      },
+      {
+        "seed": 1273923356,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1273923356",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1273923356"
+      },
+      {
+        "seed": 1529779842,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1529779842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1529779842"
+      },
+      {
+        "seed": 178573495,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed178573495",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed178573495"
+      },
+      {
+        "seed": 1108629832,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1108629832",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1108629832"
+      },
+      {
+        "seed": 1631707098,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1631707098",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1631707098"
+      },
+      {
+        "seed": 1298831484,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1298831484",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1298831484"
+      },
+      {
+        "seed": 1726357842,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1726357842",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1726357842"
+      },
+      {
+        "seed": 81947046,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed81947046",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed81947046"
+      },
+      {
+        "seed": 554694088,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed554694088",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed554694088"
+      },
+      {
+        "seed": 1007253934,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1007253934",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1007253934"
+      },
+      {
+        "seed": 1870144834,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1870144834",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1870144834"
+      },
+      {
+        "seed": 1626540459,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1626540459",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1626540459"
+      },
+      {
+        "seed": 350534581,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed350534581",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed350534581"
+      },
+      {
+        "seed": 1341753080,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1341753080",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1341753080"
+      },
+      {
+        "seed": 1714808544,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1714808544",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1714808544"
+      },
+      {
+        "seed": 33055270,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed33055270",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed33055270"
+      },
+      {
+        "seed": 1264541584,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1264541584",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1264541584"
+      },
+      {
+        "seed": 351311240,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed351311240",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed351311240"
+      },
+      {
+        "seed": 1119834882,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1119834882",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1119834882"
+      },
+      {
+        "seed": 1459310888,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1459310888",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1459310888"
+      },
+      {
+        "seed": 1082922440,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1082922440",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1082922440"
+      },
+      {
+        "seed": 1693150474,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1693150474",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1693150474"
+      },
+      {
+        "seed": 1701248426,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1701248426",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1701248426"
+      },
+      {
+        "seed": 1213271539,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1213271539",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1213271539"
+      },
+      {
+        "seed": 1458993108,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1458993108",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1458993108"
+      },
+      {
+        "seed": 1087249973,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1087249973",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1087249973"
+      },
+      {
+        "seed": 1825511135,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed1825511135",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed1825511135"
+      },
+      {
+        "seed": 615658837,
+        "run_name": "exp6_S0_fst_cipher_d16_n10000_w500_seed615658837",
+        "run_dir": "v2/runs/exp6_S0_fst_cipher_d16_n10000_w500_seed615658837"
+      }
+    ]
+  }
+}

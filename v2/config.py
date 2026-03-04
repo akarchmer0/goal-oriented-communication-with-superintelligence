@@ -25,7 +25,7 @@ class TrainConfig:
     reward_noise_std: float = 0.0
     oracle_mode: str = "fst_cipher"
     sigma_size: int = 32
-    fst_k: int = 2
+    fst_k: int = 1
     lie_prob: float = 0.0
     max_horizon: int = 60
     s1_step_penalty: float = -0.01
@@ -57,7 +57,7 @@ class RequestedExperimentsConfig:
     n_env: int = 32
     running_avg_window: int = 500
     seed: int = 0
-    num_seeds: int = 5
+    num_seeds: int = 30
     logdir: str = "v2/runs"
     manifest_path: str = ""
     lie_probs: tuple[float, ...] = (0.0, 0.1, 0.25, 0.5)
@@ -70,7 +70,7 @@ class RequestedExperimentsConfig:
     oracle_mode_exp4: str = TrainConfig().oracle_mode
     d: int = 4
     d_values: tuple[int, ...] = (2, 4, 8, 16)
-    t_pool: int = 256
+    t_pool: int = 1024
     sigma_size: int = 32
     binary_signal_sensing: str = "S1"
     binary_signal_step_penalty: float = 0.0

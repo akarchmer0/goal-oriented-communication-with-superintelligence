@@ -10,6 +10,7 @@ from v2.config import PlotConfig, RequestedExperimentsConfig
 PLOT_DEFAULTS = PlotConfig()
 REQUESTED_DEFAULTS = RequestedExperimentsConfig()
 MAX_X_EPISODES = 50_000
+MAX_X_EPISODES_GRAPH_SCALING = 10_000
 
 
 def _read_json(path: Path) -> dict:
@@ -175,6 +176,7 @@ def _plot_learning_curves_with_ci(
     title: str,
     max_points: int,
     colors: list | None = None,
+    max_x_episodes: int = MAX_X_EPISODES,
 ) -> None:
     fig, ax = plt.subplots(figsize=(8.8, 5.2))
     max_episode = 0.0
@@ -208,7 +210,7 @@ def _plot_learning_curves_with_ci(
     ax.set_title(title)
     ax.set_xlabel("Episodes")
     ax.set_ylabel("Success rate (running average)")
-    ax.set_xlim(0.0, min(float(MAX_X_EPISODES), max(1.0, max_episode)))
+    ax.set_xlim(0.0, min(float(max_x_episodes), max(1.0, max_episode)))
     ax.set_ylim(0.0, 1.02)
     ax.grid(True, alpha=0.25)
     ax.legend(loc="lower right", frameon=False)
@@ -485,6 +487,7 @@ def main() -> None:
         ),
         max_points=args.max_points,
         colors=viridis_colors,
+        max_x_episodes=MAX_X_EPISODES_GRAPH_SCALING,
     )
     _plot_path_length_curves_with_ci(
         series=exp2_series,

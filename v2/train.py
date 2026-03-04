@@ -177,6 +177,12 @@ def run_training(config: TrainConfig) -> dict:
         t_pool_size=config.t_pool,
         seed=config.seed + 17,
     )
+    valid_pair_mask = (dist_pool > 0) & (dist_pool < INF_DISTANCE)
+    valid_st_pairs = int(np.sum(valid_pair_mask, dtype=np.int64))
+    print(
+        "Valid (s,t) pairs in sampled target pool: "
+        f"{valid_st_pairs} (targets={target_nodes.shape[0]}, n={config.n})"
+    )
 
     oracle = Oracle(
         d=config.d,
