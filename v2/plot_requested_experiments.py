@@ -1,5 +1,8 @@
 import argparse
+import errno
 import json
+import sys
+import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -18,15 +21,25 @@ def _read_json(path: Path) -> dict:
         return json.load(handle)
 
 
-def _read_jsonl(path: Path) -> list[dict]:
-    rows: list[dict] = []
-    with path.open("r", encoding="utf-8") as handle:
-        for line in handle:
-            line = line.strip()
-            if not line:
-                continue
-            rows.append(json.loads(line))
-    return rows
+def _read_jsonl(path: Path, retries: int = 2, initial_delay_s: float = 0.2) -> list[dict]:
+    delay_s = initial_delay_s
+    for attempt in range(retries + 1):
+        rows: list[dict] = []
+        try:
+            with path.open("r", encoding="utf-8") as handle:
+                for line in handle:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    rows.append(json.loads(line))
+            return rows
+        except OSError as exc:
+            is_timeout = isinstance(exc, TimeoutError) or exc.errno == errno.ETIMEDOUT
+            if not is_timeout or attempt >= retries:
+                raise
+            time.sleep(delay_s)
+            delay_s *= 2.0
+    return []
 
 
 def _resolve_path(path_like: str) -> Path:
@@ -364,7 +377,16 @@ def _load_seed_metrics(seed_records: list[dict]) -> list[list[dict]]:
     for item in seed_records:
         run_dir = _resolve_path(item["run_dir"])
         metrics_path = run_dir / "metrics.jsonl"
-        rows = _read_jsonl(metrics_path)
+        seed = item.get("seed")
+        try:
+            rows = _read_jsonl(metrics_path)
+        except (OSError, json.JSONDecodeError) as exc:
+            print(
+                f"Warning: skipping seed {seed} due to unreadable metrics file "
+                f"'{metrics_path}': {exc}",
+                file=sys.stderr,
+            )
+            continue
         metrics: list[dict] = []
         for row in rows:
             if "episodes" not in row or "success_rate" not in row:
