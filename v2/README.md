@@ -1,6 +1,12 @@
-# Goal-Oriented Communication on Directed Graphs (CPU-only)
+# Goal-Oriented Communication (CPU-only)
 
-This `v2` prototype implements a CPU-only RL setup for goal-oriented communication with an alien oracle on fixed directed graphs.
+This `v2` prototype implements a CPU-only RL setup for goal-oriented communication with an alien oracle.
+
+It now supports two tasks:
+- `graph`: fixed directed graph navigation with discrete ciphers (`fixed_cipher`, `fresh_cipher`, `fst_cipher`)
+- `spatial`: convex hidden-space optimization with 2D control and gradient messages (`convex_gradient`)
+
+Use `--task graph` or `--task spatial` in `v2.train`.
 
 ## Setup
 
@@ -11,6 +17,40 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -r v2/requirements.txt
 ```
+
+## Spatial High-Dimensional Planning
+
+Recommended baseline matching the new hidden-space narrative:
+
+```bash
+python3 -m v2.train \
+  --task spatial \
+  --oracle_mode convex_gradient \
+  --spatial_hidden_dim 10 \
+  --spatial_visible_dim 2 \
+  --spatial_token_dim 10 \
+  --spatial_basis_complexity 4 \
+  --spatial_coord_limit 8 \
+  --spatial_step_size 0.35 \
+  --spatial_sgd_gradient_noise_std 0.1 \
+  --spatial_success_threshold 1.0 \
+  --sensing S0 \
+  --train_steps 300000
+```
+
+Regenerate the spatial learning curves afterward without retraining:
+
+```bash
+python3 -m v2.plot_learning_curves \
+  --run_dir v2/runs/<run_name>
+```
+
+Interpretation:
+- hidden objective is convex in `R^D`: `E(s)=0.5||s-s*||^2`
+- human controls only `z ∈ R^2`; hidden state is `s=F(z)` with nonlinear sinusoidal basis
+- oracle sends the true hidden-space gradient `g_t = s_t - s*` each step
+- policy learns `(g_t, z_t) -> a_t` with **continuous 2D actions** (any direction), using reward from energy decrease `E(F(z_t)) - E(F(z_{t+1}))`
+- spatial diagnostics now include both `2D GD` and noisy-gradient `2D SGD` baselines
 
 ## Requested Experiments Only
 
@@ -78,6 +118,13 @@ Training runs go to `v2/runs/<run_name>/` with:
 - `metrics.csv`
 - `metrics.jsonl`
 - `summary.json`
+- `spatial_trajectory_with_gradients.png` (for `--task spatial`)
+
+Learning-curve plots can be regenerated into a run directory with `v2.plot_learning_curves`:
+
+- `success_rate_vs_episodes.png` (for `--task graph`)
+- `objective_vs_episodes.png` (for `--task spatial`)
+- `distance_vs_episodes.png` (for `--task spatial`)
 
 Plotting outputs go to `plots/`:
 

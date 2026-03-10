@@ -20,15 +20,30 @@ class PPOHyperParams:
 
 
 class RolloutBuffer:
-    def __init__(self, rollout_len: int, n_env: int):
+    def __init__(
+        self,
+        rollout_len: int,
+        n_env: int,
+        token_feature_dim: int,
+        action_dim: int,
+        action_dtype: str,
+    ):
         self.rollout_len = rollout_len
         self.n_env = n_env
+        self.token_feature_dim = token_feature_dim
+        self.action_dim = int(action_dim)
+        self.action_dtype = action_dtype
         shape = (rollout_len, n_env)
 
-        self.tokens = np.zeros(shape, dtype=np.int64)
+        self.token_features = np.zeros((rollout_len, n_env, token_feature_dim), dtype=np.float32)
         self.dist_features = np.zeros(shape, dtype=np.float32)
         self.step_fractions = np.zeros(shape, dtype=np.float32)
-        self.actions = np.zeros(shape, dtype=np.int64)
+        if self.action_dtype == "discrete":
+            self.actions = np.zeros(shape, dtype=np.int64)
+        elif self.action_dtype == "continuous":
+            self.actions = np.zeros((rollout_len, n_env, self.action_dim), dtype=np.float32)
+        else:
+            raise ValueError("action_dtype must be 'discrete' or 'continuous'")
         self.logprobs = np.zeros(shape, dtype=np.float32)
         self.rewards = np.zeros(shape, dtype=np.float32)
         self.dones = np.zeros(shape, dtype=np.float32)
@@ -48,7 +63,7 @@ class RolloutBuffer:
         hidden_state: np.ndarray | None = None,
     ) -> None:
         index = self.ptr
-        self.tokens[index] = obs["token"]
+        self.token_features[index] = obs["token_features"]
         self.dist_features[index] = obs["dist"]
         self.step_fractions[index] = obs["step_frac"]
         self.actions[index] = action
@@ -109,14 +124,25 @@ def ppo_update(
     batch_size = buffer.rollout_len * buffer.n_env
     minibatch_size = max(1, batch_size // hparams.minibatches)
 
-    token = torch.as_tensor(buffer.tokens.reshape(-1), device=device, dtype=torch.long)
+    token_features = torch.as_tensor(
+        buffer.token_features.reshape(-1, buffer.token_feature_dim),
+        device=device,
+        dtype=torch.float32,
+    )
     dist_feature = torch.as_tensor(
         buffer.dist_features.reshape(-1), device=device, dtype=torch.float32
     )
     step_fraction = torch.as_tensor(
         buffer.step_fractions.reshape(-1), device=device, dtype=torch.float32
     )
-    actions = torch.as_tensor(buffer.actions.reshape(-1), device=device, dtype=torch.long)
+    if buffer.action_dtype == "discrete":
+        actions = torch.as_tensor(buffer.actions.reshape(-1), device=device, dtype=torch.long)
+    else:
+        actions = torch.as_tensor(
+            buffer.actions.reshape(-1, buffer.action_dim),
+            device=device,
+            dtype=torch.float32,
+        )
     old_logprobs = torch.as_tensor(
         buffer.logprobs.reshape(-1), device=device, dtype=torch.float32
     )
@@ -142,7 +168,7 @@ def ppo_update(
             index = permutation[start : start + minibatch_size]
 
             new_logprob, entropy, values = model.evaluate_actions(
-                token[index],
+                token_features[index],
                 dist_feature[index],
                 step_fraction[index],
                 actions[index],

@@ -1,42 +1,51 @@
 import torch
 import torch.nn as nn
-from torch.distributions import Categorical
+from torch.distributions import Categorical, Normal
 
 
 class PolicyValueNet(nn.Module):
     def __init__(
         self,
-        token_vocab_size: int,
-        null_token_id: int,
+        token_feature_dim: int,
         action_dim: int,
-        token_embed_dim: int = 16,
         hidden_dim: int = 64,
         architecture: str = "mlp",
+        action_space_type: str = "discrete",
+        continuous_init_std: float = 0.4,
     ):
         super().__init__()
         if architecture not in {"mlp", "gru"}:
             raise ValueError(f"Unsupported architecture '{architecture}'")
-        self.null_token_id = null_token_id
+        if action_space_type not in {"discrete", "continuous"}:
+            raise ValueError(f"Unsupported action_space_type '{action_space_type}'")
+        if continuous_init_std <= 0.0:
+            raise ValueError("continuous_init_std must be > 0")
         self.action_dim = action_dim
         self.hidden_dim = hidden_dim
         self.architecture = architecture
+        self.action_space_type = action_space_type
 
-        self.token_embedding = nn.Embedding(token_vocab_size + 1, token_embed_dim)
+        feature_dim = token_feature_dim + 2
         if architecture == "mlp":
             self.backbone = nn.Sequential(
-                nn.Linear(token_embed_dim + 2, hidden_dim),
+                nn.Linear(feature_dim, hidden_dim),
                 nn.Tanh(),
                 nn.Linear(hidden_dim, hidden_dim),
                 nn.Tanh(),
             )
         else:
             self.backbone = nn.GRU(
-                input_size=token_embed_dim + 2,
+                input_size=feature_dim,
                 hidden_size=hidden_dim,
                 num_layers=1,
                 batch_first=True,
             )
         self.policy_head = nn.Linear(hidden_dim, action_dim)
+        if self.action_space_type == "continuous":
+            init = torch.full((action_dim,), float(continuous_init_std), dtype=torch.float32)
+            self.log_std = nn.Parameter(torch.log(init))
+        else:
+            self.log_std = None
         self.value_head = nn.Linear(hidden_dim, 1)
 
     def initial_state(self, batch_size: int, device: torch.device) -> torch.Tensor | None:
@@ -46,14 +55,13 @@ class PolicyValueNet(nn.Module):
 
     def _encode(
         self,
-        token: torch.Tensor,
+        token_features: torch.Tensor,
         dist_feature: torch.Tensor,
         step_fraction: torch.Tensor,
         hidden_state: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
-        embedded = self.token_embedding(token)
         features = torch.cat(
-            [embedded, dist_feature.unsqueeze(-1), step_fraction.unsqueeze(-1)],
+            [token_features, dist_feature.unsqueeze(-1), step_fraction.unsqueeze(-1)],
             dim=-1,
         )
         if self.architecture == "mlp":
@@ -72,54 +80,77 @@ class PolicyValueNet(nn.Module):
 
     def forward(
         self,
-        token: torch.Tensor,
+        token_features: torch.Tensor,
         dist_feature: torch.Tensor,
         step_fraction: torch.Tensor,
         hidden_state: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor | None]:
-        hidden, next_hidden_state = self._encode(token, dist_feature, step_fraction, hidden_state)
-        logits = self.policy_head(hidden)
+        hidden, next_hidden_state = self._encode(
+            token_features,
+            dist_feature,
+            step_fraction,
+            hidden_state,
+        )
+        policy_output = self.policy_head(hidden)
         value = self.value_head(hidden).squeeze(-1)
-        return logits, value, next_hidden_state
+        return policy_output, value, next_hidden_state
+
+    def _distribution(self, policy_output: torch.Tensor):
+        if self.action_space_type == "discrete":
+            return Categorical(logits=policy_output)
+        assert self.log_std is not None
+        std = torch.exp(self.log_std).unsqueeze(0).expand_as(policy_output)
+        return Normal(loc=policy_output, scale=std)
 
     @torch.no_grad()
     def act(
         self,
-        token: torch.Tensor,
+        token_features: torch.Tensor,
         dist_feature: torch.Tensor,
         step_fraction: torch.Tensor,
         hidden_state: torch.Tensor | None = None,
         deterministic: bool = False,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor | None]:
-        logits, value, next_hidden_state = self.forward(
-            token,
+        policy_output, value, next_hidden_state = self.forward(
+            token_features,
             dist_feature,
             step_fraction,
             hidden_state=hidden_state,
         )
-        distribution = Categorical(logits=logits)
-        if deterministic:
-            action = torch.argmax(logits, dim=-1)
+        distribution = self._distribution(policy_output)
+        if self.action_space_type == "discrete":
+            if deterministic:
+                action = torch.argmax(policy_output, dim=-1)
+            else:
+                action = distribution.sample()
+            logprob = distribution.log_prob(action)
         else:
-            action = distribution.sample()
-        logprob = distribution.log_prob(action)
+            if deterministic:
+                action = policy_output
+            else:
+                action = distribution.rsample()
+            logprob = distribution.log_prob(action).sum(dim=-1)
         return action, logprob, value, next_hidden_state
 
     def evaluate_actions(
         self,
-        token: torch.Tensor,
+        token_features: torch.Tensor,
         dist_feature: torch.Tensor,
         step_fraction: torch.Tensor,
         actions: torch.Tensor,
         hidden_state: torch.Tensor | None = None,
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        logits, value, _ = self.forward(
-            token,
+        policy_output, value, _ = self.forward(
+            token_features,
             dist_feature,
             step_fraction,
             hidden_state=hidden_state,
         )
-        distribution = Categorical(logits=logits)
-        logprob = distribution.log_prob(actions)
-        entropy = distribution.entropy()
+        distribution = self._distribution(policy_output)
+        if self.action_space_type == "discrete":
+            logprob = distribution.log_prob(actions)
+            entropy = distribution.entropy()
+        else:
+            logprob = distribution.log_prob(actions).sum(dim=-1)
+            entropy = distribution.entropy().sum(dim=-1)
         return logprob, entropy, value

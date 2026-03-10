@@ -4,9 +4,23 @@ from pathlib import Path
 
 @dataclass
 class TrainConfig:
+    task: str = "graph"
     n: int = 10000
     d: int = 8
     t_pool: int = 256
+    spatial_hidden_dim: int = 10
+    spatial_visible_dim: int = 2
+    spatial_coord_limit: int = 8
+    spatial_token_dim: int = 10
+    spatial_token_noise_std: float = 0.0
+    spatial_step_size: float = 0.35
+    spatial_sgd_gradient_noise_std: float = 0.1
+    spatial_success_threshold: float = 1.0
+    spatial_basis_complexity: int = 3
+    spatial_f_type: str = "FOURIER"
+    spatial_policy_arch: str = "gru"
+    spatial_refresh_map_each_episode: bool = False
+    spatial_plot_interval_episodes: int = 100
     n_env: int = 32
     algo: str = "ppo"
     train_steps: int = 300_000
@@ -18,6 +32,9 @@ class TrainConfig:
     entropy_coef: float = 0.01
     value_coef: float = 0.5
     lr: float = 3e-4
+    lr_scheduler: str = "none"
+    lr_min_factor: float = 0.1
+    lr_warmup_updates: int = 0
     max_grad_norm: float = 0.5
     hidden_dim: int = 256
     token_embed_dim: int = 16
@@ -30,6 +47,7 @@ class TrainConfig:
     max_horizon: int = 60
     s1_step_penalty: float = -0.01
     running_avg_window: int = 100
+    save_metrics_interval_episodes: int = 500
     eval_interval_episodes: int = 200
     eval_episodes: int = 200
     minibatches: int = 4
@@ -41,9 +59,18 @@ class TrainConfig:
 
     def resolve_run_dir(self) -> Path:
         base = Path(self.logdir)
-        run_name = self.run_name or (
-            f"n{self.n}_{self.oracle_mode}_{self.sensing}_sigma{self.sigma_size}_seed{self.seed}"
-        )
+        if self.task == "graph":
+            default_run_name = (
+                f"graph_n{self.n}_{self.oracle_mode}_{self.sensing}_sigma{self.sigma_size}_"
+                f"seed{self.seed}"
+            )
+        else:
+            default_run_name = (
+                f"spatial_D{self.spatial_hidden_dim}_vis{self.spatial_visible_dim}_"
+                f"{self.oracle_mode}_{self.sensing}_k{self.spatial_token_dim}_"
+                f"F{self.spatial_f_type}_seed{self.seed}"
+            )
+        run_name = self.run_name or default_run_name
         return base / run_name
 
 

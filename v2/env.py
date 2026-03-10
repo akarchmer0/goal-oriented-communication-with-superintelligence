@@ -50,6 +50,7 @@ class VectorizedGraphEnv:
         self.d = out_neighbors.shape[1]
         self.t_pool_size = target_nodes.shape[0]
         self.null_token_id = oracle.token_vocab_size
+        self.token_feature_dim = oracle.token_vocab_size + 1
         self.max_dist_norm = float(self.n)
         self.unreachable_penalty_dist = float(2 * self.n)
 
@@ -159,6 +160,8 @@ class VectorizedGraphEnv:
 
     def get_obs(self) -> dict[str, np.ndarray]:
         tokens = self._get_tokens()
+        token_features = np.zeros((self.n_env, self.token_feature_dim), dtype=np.float32)
+        token_features[np.arange(self.n_env), tokens] = 1.0
         d_cur = self.dist_pool[self.target_indices, self.current_nodes]
         dist_feature = np.where(
             d_cur < INF_DISTANCE,
@@ -169,6 +172,7 @@ class VectorizedGraphEnv:
 
         return {
             "token": tokens,
+            "token_features": token_features,
             "dist": dist_feature,
             "step_frac": step_fraction,
         }
