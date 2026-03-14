@@ -195,7 +195,7 @@ oracle_mode:              convex_gradient
 spatial_hidden_dim:       100
 spatial_visible_dim:      2
 spatial_coord_limit:      8
-spatial_step_size:        0.25
+base_lr:                  0.25
 spatial_success_threshold: 0.02
 spatial_basis_complexity:  3
 spatial_f_type:           FOURIER

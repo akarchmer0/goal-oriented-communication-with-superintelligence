@@ -13,14 +13,27 @@ class TrainConfig:
     spatial_coord_limit: int = 8
     spatial_token_dim: int = 10
     spatial_token_noise_std: float = 0.0
-    spatial_step_size: float = 0.35
-    spatial_sgd_gradient_noise_std: float = 0.1
-    spatial_success_threshold: float = 1.0
+    ppo_step_scale: float = 1.0
+    spatial_step_size: float = 1.0
+    spatial_success_threshold: float = 0.01
+    spatial_enable_success_curriculum: bool = True
+    spatial_success_curriculum_start: float = 0.5
+    spatial_success_curriculum_trigger_rate: float = 0.8
+    spatial_success_curriculum_decay: float = 0.2
+    spatial_success_curriculum_min: float = 0.01
     spatial_basis_complexity: int = 3
     spatial_f_type: str = "FOURIER"
-    spatial_policy_arch: str = "gru"
+    spatial_policy_arch: str = "mlp"
     spatial_refresh_map_each_episode: bool = False
+    spatial_fixed_start_target: bool = False
     spatial_plot_interval_episodes: int = 100
+    spatial_enable_baselines: bool = True
+    spatial_tune_baseline_lrs: bool = True
+    spatial_early_stop_on_all_methods_success: bool = False
+    spatial_baseline_lr_candidates: str = "0.001,0.003,0.01,0.03,0.05,0.1,0.2"
+    spatial_baseline_lr_tune_tasks: int = 64
+    spatial_optimization_curve_tasks: int = 100
+    spatial_enable_optimization_curve_eval: bool = True
     n_env: int = 32
     algo: str = "ppo"
     train_steps: int = 300_000
@@ -56,6 +69,7 @@ class TrainConfig:
     run_name: str = ""
     device: str = "cpu"
     diagnostic_cipher: bool = True
+    enable_training_plots: bool = True
 
     def resolve_run_dir(self) -> Path:
         base = Path(self.logdir)

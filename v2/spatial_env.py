@@ -27,27 +27,31 @@ class VectorizedSpatialEnv:
         seed: int,
         s1_step_penalty: float = -0.01,
         reward_noise_std: float = 0.0,
-        step_size: float = 0.35,
-        sgd_gradient_noise_std: float = 0.1,
-        success_threshold: float = 1.0,
+        step_size: float = 1.0,
+        ppo_step_scale: float = 1.0,
+        baseline_lr_gd: float | None = None,
+        baseline_lr_adam: float | None = None,
+        success_threshold: float = 0.01,
         basis_complexity: int = 3,
         f_type: str = "FOURIER",
         refresh_map_each_episode: bool = False,
+        compute_episode_baselines: bool = True,
+        fixed_start_target: bool = False,
     ):
         if sensing not in {"S0", "S1"}:
             raise ValueError("sensing must be S0 or S1")
         if hidden_dim < 1:
             raise ValueError("hidden_dim must be >= 1")
-        if visible_dim != 2:
-            raise ValueError("This setup assumes human control coordinates z in R^2")
+        if visible_dim < 2:
+            raise ValueError("visible_dim must be >= 2")
         if coord_limit <= 0:
             raise ValueError("coord_limit must be > 0")
         if reward_noise_std < 0.0:
             raise ValueError("reward_noise_std must be >= 0")
         if step_size <= 0.0:
             raise ValueError("step_size must be > 0")
-        if sgd_gradient_noise_std < 0.0:
-            raise ValueError("sgd_gradient_noise_std must be >= 0")
+        if not np.isfinite(float(ppo_step_scale)) or float(ppo_step_scale) <= 0.0:
+            raise ValueError("ppo_step_scale must be finite and > 0")
         if success_threshold <= 0.0:
             raise ValueError("success_threshold must be > 0")
         if basis_complexity < 1:
@@ -65,27 +69,40 @@ class VectorizedSpatialEnv:
         self.max_horizon = int(max_horizon)
         self.s1_step_penalty = float(s1_step_penalty)
         self.reward_noise_std = float(reward_noise_std)
-        self.step_size = float(step_size)
-        self.sgd_gradient_noise_std = float(sgd_gradient_noise_std)
+        self.base_step_size = float(step_size)
+        self.control_budget_scale = float(np.sqrt(float(self.visible_dim) / 2.0))
+        self.step_size = float(self.base_step_size * self.control_budget_scale)
+        self.ppo_step_scale = float(ppo_step_scale)
+        gd_lr = float(self.step_size) if baseline_lr_gd is None else float(baseline_lr_gd)
+        adam_lr = float(self.step_size) if baseline_lr_adam is None else float(baseline_lr_adam)
+        if gd_lr <= 0.0 or adam_lr <= 0.0:
+            raise ValueError("baseline learning rates must be > 0")
+        self.baseline_lr_gd = gd_lr
+        self.baseline_lr_adam = adam_lr
         self.success_threshold = float(success_threshold)
         self.basis_complexity = int(basis_complexity)
         self.f_type = map_family
         self.refresh_map_each_episode = bool(refresh_map_each_episode)
+        self.compute_episode_baselines = bool(compute_episode_baselines)
+        self.fixed_start_target = bool(fixed_start_target)
         self.rng = np.random.default_rng(seed)
         self.baseline_rng = np.random.default_rng(int(seed) + 101_003)
+        self.objective_scale_rng = np.random.default_rng(int(seed) + 202_007)
+        self._fixed_target_min_xy: np.ndarray | None = None
+        self._fixed_source_xy: np.ndarray | None = None
 
-        # The policy emits a continuous (dx, dy, step_raw) vector.
-        self.action_dim = 3
+        # The policy emits a continuous (direction, step_raw) vector.
+        self.action_dim = self.visible_dim + 1
         self.oracle_token_dim = int(self.oracle.token_dim)
         # Include z coordinates so policy can learn (g_t, z_t) -> action.
         self.token_feature_dim = self.oracle_token_dim + self.visible_dim
 
-        self.reference_min_xy = np.zeros(2, dtype=np.float32)
+        self.reference_min_xy = np.zeros(self.visible_dim, dtype=np.float32)
         self.reference_min_xy_env = np.zeros((self.n_env, self.visible_dim), dtype=np.float32)
+        self.max_objective_env = np.ones(self.n_env, dtype=np.float32)
+        self.max_objective = 1.0
         self._init_map_storage()
         self._initialize_maps()
-
-        self.max_objective = self._estimate_max_objective()
 
         self.current_xy = np.zeros((self.n_env, self.visible_dim), dtype=np.float32)
         self.initial_xy = np.zeros((self.n_env, self.visible_dim), dtype=np.float32)
@@ -271,15 +288,80 @@ class VectorizedSpatialEnv:
         t = float(np.clip(float(step_index) / float(h - 1), 0.0, 1.0))
         return float(0.5 * (1.0 + np.cos(np.pi * t)))
 
+    def _cosine_annealed_baseline_lr(
+        self,
+        step_index: int,
+        horizon: int,
+        base_lr: float | None = None,
+    ) -> float:
+        # Baseline optimizers use a standard learning-rate schedule:
+        # eta_t = eta_0 * 0.5 * (1 + cos(pi * t / (H - 1))).
+        lr0 = float(self.step_size) if base_lr is None else float(base_lr)
+        return lr0 * self._cosine_annealed_step_scale(step_index, horizon)
+
+    def set_baseline_learning_rates(
+        self,
+        *,
+        gd: float | None = None,
+        adam: float | None = None,
+    ) -> None:
+        if gd is not None:
+            gd_val = float(gd)
+            if gd_val <= 0.0:
+                raise ValueError("gd baseline lr must be > 0")
+            self.baseline_lr_gd = gd_val
+        if adam is not None:
+            adam_val = float(adam)
+            if adam_val <= 0.0:
+                raise ValueError("adam baseline lr must be > 0")
+            self.baseline_lr_adam = adam_val
+
+    def get_baseline_learning_rates(self) -> dict[str, float]:
+        return {
+            "gd": float(self.baseline_lr_gd),
+            "adam": float(self.baseline_lr_adam),
+        }
+
+    def _apply_baseline_optimizer_step(self, z: np.ndarray, update: np.ndarray) -> np.ndarray:
+        next_state = z.astype(np.float32) + update.astype(np.float32)
+        return np.clip(next_state, -self.coord_limit, self.coord_limit).astype(np.float32)
+
     def _objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
         grad_h = self._gradient_hidden(z, env_index=env_index)
         return 0.5 * float(np.dot(grad_h, grad_h))
+
+    def _set_max_objective(self, value: float, env_index: int = 0) -> None:
+        idx = int(env_index)
+        bounded = max(1.0, float(value))
+        self.max_objective_env[idx] = np.float32(bounded)
+        if idx == 0:
+            self.max_objective = float(bounded)
+
+    def _refresh_objective_scale(self, env_index: int = 0, samples: int = 512) -> float:
+        value = self._estimate_max_objective(samples=samples, env_index=env_index)
+        self._set_max_objective(value, env_index=env_index)
+        return float(value)
+
+    def _normalized_objective_from_raw(self, objective: float, env_index: int = 0) -> float:
+        scale = max(float(self.max_objective_env[int(env_index)]), 1e-8)
+        return float(np.clip(float(objective) / scale, 0.0, 1.0))
+
+    def _normalized_objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
+        raw = self._objective_value(z, env_index=env_index)
+        return self._normalized_objective_from_raw(raw, env_index=env_index)
+
+    def _is_success(self, z: np.ndarray, env_index: int = 0) -> bool:
+        normalized = self._normalized_objective_value(z, env_index=env_index)
+        return bool(normalized <= self.success_threshold)
 
     def _reference_distance(self, z: np.ndarray, env_index: int = 0) -> float:
         idx = int(env_index)
         return float(np.linalg.norm(z.astype(np.float32) - self.reference_min_xy_env[idx]))
 
     def _token_for_state(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
+        if self.oracle.mode == "visible_gradient":
+            grad_xy = self._gradient_xy(z, env_index=env_index).astype(np.float32)
+            return self.oracle.encode_visible_gradient(grad_xy, self.rng)
         grad_h = self._gradient_hidden(z, env_index=env_index)
         return self.oracle.encode_gradient(grad_h, self.rng)
 
@@ -295,36 +377,36 @@ class VectorizedSpatialEnv:
         step_scale_override: float | None = None,
     ) -> np.ndarray:
         action_vector = np.asarray(action, dtype=np.float32).reshape(-1)
-        if action_vector.shape[0] not in {2, 3}:
-            raise ValueError(f"Expected action vector with shape (2,) or (3,), got {action_vector.shape}")
+        if action_vector.shape[0] not in {self.visible_dim, self.visible_dim + 1}:
+            raise ValueError(
+                "Expected action vector with shape "
+                f"({self.visible_dim},) or ({self.visible_dim + 1},), got {action_vector.shape}"
+            )
 
-        direction = action_vector[:2]
+        direction = action_vector[: self.visible_dim]
         if step_scale_override is not None:
             step_scale = float(np.clip(step_scale_override, 0.0, 1.0))
-        elif action_vector.shape[0] == 3:
-            raw_step = float(np.clip(action_vector[2], -20.0, 20.0))
-            step_scale = float(1.0 / (1.0 + np.exp(-raw_step)))
+        elif action_vector.shape[0] == self.visible_dim + 1:
+            raw_step = float(np.clip(action_vector[self.visible_dim], -20.0, 20.0))
+            step_scale = float(self.ppo_step_scale * (1.0 / (1.0 + np.exp(-raw_step))))
         else:
             step_scale = 1.0
 
         direction64 = direction.astype(np.float64)
         max_abs = float(np.max(np.abs(direction64)))
         if not np.isfinite(max_abs) or max_abs <= 1e-12:
-            delta = np.zeros(2, dtype=np.float32)
+            delta = np.zeros(self.visible_dim, dtype=np.float32)
         else:
             scaled = direction64 / max_abs
             scaled_norm = float(np.linalg.norm(scaled))
             norm = max_abs * scaled_norm
             if norm > 1e-8 and np.isfinite(norm):
-                step_magnitude = (
-                    float(self.step_size) * step_scale
-                    if step_scale_override is not None
-                    else step_scale
-                )
+                # Always scale policy movement by step_size; step_scale only modulates it.
+                step_magnitude = float(self.step_size) * step_scale
                 delta64 = (direction64 / norm) * step_magnitude
                 delta = delta64.astype(np.float32)
             else:
-                delta = np.zeros(2, dtype=np.float32)
+                delta = np.zeros(self.visible_dim, dtype=np.float32)
         updated = z + delta
         return np.clip(updated, -self.coord_limit, self.coord_limit).astype(np.float32)
 
@@ -336,7 +418,7 @@ class VectorizedSpatialEnv:
         ).astype(np.float32)
 
     def _estimate_max_objective(self, samples: int = 2048, env_index: int = 0) -> float:
-        sampled = self.rng.uniform(
+        sampled = self.objective_scale_rng.uniform(
             low=-self.coord_limit,
             high=self.coord_limit,
             size=(samples, self.visible_dim),
@@ -345,12 +427,14 @@ class VectorizedSpatialEnv:
             [self._objective_value(point, env_index=env_index) for point in sampled],
             dtype=np.float32,
         )
-        q95 = float(np.quantile(values, 0.95))
-        return max(1.0, q95)
+        max_value = float(np.max(values)) if values.size > 0 else 1.0
+        return max(1.0, max_value)
 
     def energy_landscape_grid(
         self, resolution: int = 140, env_index: int = 0
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        if self.visible_dim != 2:
+            raise ValueError("energy_landscape_grid is only defined when visible_dim == 2")
         resolution = max(20, int(resolution))
         axis = np.linspace(-self.coord_limit, self.coord_limit, num=resolution, dtype=np.float32)
         grid_x, grid_y = np.meshgrid(axis, axis, indexing="xy")
@@ -366,13 +450,23 @@ class VectorizedSpatialEnv:
         idx = int(env_index)
         if refresh_map:
             self._refresh_map_for_env(idx)
-        target_min = self._sample_xy()
+
+        if self.fixed_start_target:
+            if self._fixed_target_min_xy is None:
+                self._fixed_target_min_xy = self._sample_xy().astype(np.float32)
+            if self._fixed_source_xy is None:
+                self._fixed_source_xy = self._sample_xy().astype(np.float32)
+            target_min = self._fixed_target_min_xy.copy()
+            source = self._fixed_source_xy.copy()
+        else:
+            target_min = self._sample_xy()
+            source = self._sample_xy()
+
         self.reference_min_xy_env[idx] = target_min
         if idx == 0:
             self.reference_min_xy = target_min.copy()
         self.s_star[idx] = self._hidden_from_z(target_min, env_index=idx)
-
-        source = self._sample_xy()
+        self._refresh_objective_scale(env_index=idx)
         initial_objective = self._objective_value(source, env_index=idx)
         # Proxy "distance" in step units to support existing metrics pipeline.
         shortest_dist = int(np.ceil(np.linalg.norm(source, ord=1) / self.step_size))
@@ -402,46 +496,63 @@ class VectorizedSpatialEnv:
         start_xy: np.ndarray,
         horizon: int,
         env_index: int = 0,
+        base_lr: float | None = None,
     ) -> tuple[float, float]:
         return self._rollout_descent_baseline_final_stats(
             start_xy=start_xy,
             horizon=horizon,
             env_index=env_index,
-            gradient_noise_std=0.0,
+            base_lr=(self.baseline_lr_gd if base_lr is None else float(base_lr)),
         )
 
-    def rollout_sgd_baseline_final_stats(
+    def rollout_adam_baseline_final_stats(
         self,
         start_xy: np.ndarray,
         horizon: int,
         env_index: int = 0,
+        base_lr: float | None = None,
     ) -> tuple[float, float]:
-        return self._rollout_descent_baseline_final_stats(
-            start_xy=start_xy,
-            horizon=horizon,
-            env_index=env_index,
-            gradient_noise_std=self.sgd_gradient_noise_std,
-            noise_rng=self.baseline_rng,
-        )
+        state = start_xy.astype(np.float32).copy()
+        m = np.zeros(self.visible_dim, dtype=np.float64)
+        v = np.zeros(self.visible_dim, dtype=np.float64)
+        beta1 = 0.9
+        beta2 = 0.999
+        eps = 1e-8
+        for step in range(int(horizon)):
+            grad_xy = self._gradient_xy(state, env_index=env_index).astype(np.float64)
+            m = beta1 * m + (1.0 - beta1) * grad_xy
+            v = beta2 * v + (1.0 - beta2) * (grad_xy * grad_xy)
+            t = step + 1
+            m_hat = m / (1.0 - beta1**t)
+            v_hat = v / (1.0 - beta2**t)
+            lr0 = self.baseline_lr_adam if base_lr is None else float(base_lr)
+            lr_t = self._cosine_annealed_baseline_lr(
+                step,
+                int(horizon),
+                base_lr=lr0,
+            )
+            adam_update = (-lr_t * (m_hat / (np.sqrt(v_hat) + eps))).astype(np.float32)
+            state = self._apply_baseline_optimizer_step(state, adam_update)
+            if self._is_success(state, env_index=env_index):
+                break
+        final_objective = float(self._objective_value(state, env_index=env_index))
+        final_ref_distance = self._reference_distance(state, env_index=env_index)
+        return final_objective, final_ref_distance
 
     def _rollout_descent_baseline_final_stats(
         self,
         start_xy: np.ndarray,
         horizon: int,
         env_index: int = 0,
-        gradient_noise_std: float = 0.0,
-        noise_rng: np.random.Generator | None = None,
+        base_lr: float | None = None,
     ) -> tuple[float, float]:
         state = start_xy.astype(np.float32).copy()
-        noise_std = float(max(0.0, gradient_noise_std))
-        rng = noise_rng if noise_rng is not None else self.baseline_rng
         for step in range(int(horizon)):
             grad_xy = self._gradient_xy(state, env_index=env_index)
-            if noise_std > 0.0:
-                grad_xy = grad_xy + rng.normal(0.0, noise_std, size=grad_xy.shape).astype(np.float32)
-            step_scale = self._cosine_annealed_step_scale(step, int(horizon))
-            state = self._apply_action(state, -grad_xy, step_scale_override=step_scale)
-            if self._objective_value(state, env_index=env_index) <= self.success_threshold:
+            lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=base_lr)
+            update = (-lr_t * grad_xy).astype(np.float32)
+            state = self._apply_baseline_optimizer_step(state, update)
+            if self._is_success(state, env_index=env_index):
                 break
         final_objective = float(self._objective_value(state, env_index=env_index))
         final_ref_distance = self._reference_distance(state, env_index=env_index)
@@ -478,7 +589,10 @@ class VectorizedSpatialEnv:
             ],
             dtype=np.float32,
         )
-        z_feature = np.clip(objective / self.max_objective, 0.0, 1.0).astype(np.float32)
+        z_feature = np.asarray(
+            [self._normalized_objective_from_raw(value, env_index=idx) for idx, value in enumerate(objective)],
+            dtype=np.float32,
+        )
         step_fraction = (self.steps / np.maximum(self.horizons, 1)).astype(np.float32)
         return {
             "token_features": token_features,
@@ -505,20 +619,21 @@ class VectorizedSpatialEnv:
 
         for env_index in range(self.n_env):
             z_old = self.current_xy[env_index]
-            e_old = self._objective_value(z_old, env_index=env_index)
+            e_old_raw = self._objective_value(z_old, env_index=env_index)
 
             action = action_vectors[env_index]
             z_new = self._apply_action(z_old, action)
             self.current_xy[env_index] = z_new
             self.steps[env_index] += 1
 
-            e_new = self._objective_value(z_new, env_index=env_index)
-            success = bool(e_new <= self.success_threshold)
+            e_new_raw = self._objective_value(z_new, env_index=env_index)
+            e_new_normalized = self._normalized_objective_from_raw(e_new_raw, env_index=env_index)
+            success = bool(e_new_normalized <= self.success_threshold)
             timeout = int(self.steps[env_index]) >= int(self.horizons[env_index])
             episode_done = bool(success or timeout)
 
             if self.sensing == "S0":
-                progress = float(e_old - e_new)
+                progress = float(e_old_raw - e_new_raw)
                 reward = progress
                 if success:
                     reward += 100.0
@@ -534,32 +649,53 @@ class VectorizedSpatialEnv:
                 self.completed_episodes += 1
                 episode_len = int(self.steps[env_index])
                 shortest_dist = int(self.initial_dist[env_index])
-                baseline_final_objective, baseline_final_ref_distance = (
-                    self.rollout_baseline_final_stats(
-                        start_xy=self.initial_xy[env_index],
-                        horizon=int(self.horizons[env_index]),
-                        env_index=env_index,
+                baseline_final_objective = float("nan")
+                baseline_final_ref_distance = float("nan")
+                adam_baseline_final_objective = float("nan")
+                adam_baseline_final_ref_distance = float("nan")
+                if self.compute_episode_baselines:
+                    baseline_final_objective, baseline_final_ref_distance = (
+                        self.rollout_baseline_final_stats(
+                            start_xy=self.initial_xy[env_index],
+                            horizon=int(self.horizons[env_index]),
+                            env_index=env_index,
+                        )
                     )
-                )
-                sgd_baseline_final_objective, sgd_baseline_final_ref_distance = (
-                    self.rollout_sgd_baseline_final_stats(
-                        start_xy=self.initial_xy[env_index],
-                        horizon=int(self.horizons[env_index]),
-                        env_index=env_index,
+                    adam_baseline_final_objective, adam_baseline_final_ref_distance = (
+                        self.rollout_adam_baseline_final_stats(
+                            start_xy=self.initial_xy[env_index],
+                            horizon=int(self.horizons[env_index]),
+                            env_index=env_index,
+                        )
                     )
-                )
                 info = {
                     "episode_done": True,
                     "success": success,
                     "episode_len": episode_len,
                     "shortest_dist": shortest_dist,
-                    "initial_objective": float(self.initial_objective[env_index]),
-                    "final_objective": float(e_new),
+                    "initial_objective": self._normalized_objective_from_raw(
+                        float(self.initial_objective[env_index]),
+                        env_index=env_index,
+                    ),
+                    "initial_objective_raw": float(self.initial_objective[env_index]),
+                    "final_objective": self._normalized_objective_from_raw(
+                        float(e_new_raw),
+                        env_index=env_index,
+                    ),
+                    "final_objective_raw": float(e_new_raw),
                     "final_ref_distance": self._reference_distance(z_new, env_index=env_index),
-                    "baseline_final_objective": float(baseline_final_objective),
+                    "baseline_final_objective": self._normalized_objective_from_raw(
+                        float(baseline_final_objective),
+                        env_index=env_index,
+                    ),
+                    "baseline_final_objective_raw": float(baseline_final_objective),
                     "baseline_final_ref_distance": float(baseline_final_ref_distance),
-                    "sgd_baseline_final_objective": float(sgd_baseline_final_objective),
-                    "sgd_baseline_final_ref_distance": float(sgd_baseline_final_ref_distance),
+                    "adam_baseline_final_objective": self._normalized_objective_from_raw(
+                        float(adam_baseline_final_objective),
+                        env_index=env_index,
+                    ),
+                    "adam_baseline_final_objective_raw": float(adam_baseline_final_objective),
+                    "adam_baseline_final_ref_distance": float(adam_baseline_final_ref_distance),
                 }
                 if success and shortest_dist > 0:
                     info["stretch"] = float(episode_len / shortest_dist)

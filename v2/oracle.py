@@ -11,6 +11,7 @@ ORACLE_MODES = {
 
 SPATIAL_ORACLE_MODES = {
     "convex_gradient",
+    "visible_gradient",
     "linear_embedding",
     "fresh_linear_embedding",
     "random_message",
@@ -173,12 +174,40 @@ class SpatialOracle:
             token = np.zeros(self.token_dim, dtype=np.float32)
         elif self.mode == "random_message":
             token = rng.normal(size=self.token_dim).astype(np.float32)
+        elif self.mode == "visible_gradient":
+            raise ValueError(
+                "mode='visible_gradient' requires encode_visible_gradient(...) with visible-space gradient."
+            )
         elif self.mode == "convex_gradient":
             token = gradient.copy()
         else:
             embedding = self._step_embedding(rng)
             token = np.matmul(embedding, gradient).astype(np.float32)
 
+        if self.token_noise_std > 0.0:
+            noise = rng.normal(loc=0.0, scale=self.token_noise_std, size=self.token_dim).astype(
+                np.float32
+            )
+            token = token + noise
+        return token
+
+    def encode_visible_gradient(
+        self,
+        visible_gradient: np.ndarray,
+        rng: np.random.Generator,
+    ) -> np.ndarray:
+        if self.mode != "visible_gradient":
+            raise ValueError(
+                f"encode_visible_gradient is only valid for mode='visible_gradient', got {self.mode!r}"
+            )
+
+        visible_gradient = np.asarray(visible_gradient, dtype=np.float32)
+        if visible_gradient.shape != (self.token_dim,):
+            raise ValueError(
+                f"visible_gradient must have shape ({self.token_dim},), got {visible_gradient.shape}"
+            )
+
+        token = visible_gradient.copy()
         if self.token_noise_std > 0.0:
             noise = rng.normal(loc=0.0, scale=self.token_noise_std, size=self.token_dim).astype(
                 np.float32

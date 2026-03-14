@@ -1,10 +1,22 @@
 from pathlib import Path
 
+import matplotlib
+matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.ticker import MaxNLocator, PercentFormatter
 
 MAX_X_EPISODES = 75_000
+SPATIAL_OPTIMIZATION_METHOD_ORDER = (
+    "gd",
+    "adam",
+    "rl_no_oracle",
+    "rl_visible_oracle",
+    "rl_hidden_gradient",
+)
+SPATIAL_OPTIMIZATION_METHOD_INDEX = {
+    method_key: idx for idx, method_key in enumerate(SPATIAL_OPTIMIZATION_METHOD_ORDER)
+}
 
 
 
@@ -137,6 +149,16 @@ def _plasma_series_colors(num_series: int) -> list:
     return list(plt.cm.plasma(np.linspace(0.12, 0.88, max(1, num_series))))
 
 
+def _spatial_optimization_method_color(method_key: str, fallback_index: int, total: int) -> tuple:
+    palette_size = max(1, len(SPATIAL_OPTIMIZATION_METHOD_ORDER), int(total))
+    palette = _plasma_series_colors(palette_size)
+    if method_key in SPATIAL_OPTIMIZATION_METHOD_INDEX:
+        idx = SPATIAL_OPTIMIZATION_METHOD_INDEX[method_key]
+    else:
+        idx = int(fallback_index)
+    return palette[min(max(0, idx), len(palette) - 1)]
+
+
 def _set_learning_axes(ax: plt.Axes, max_episode: float, success_arrays: list[np.ndarray]) -> None:
     ax.set_xlabel("Training episodes")
     ax.set_ylabel("Success rate")
@@ -219,9 +241,13 @@ def plot_objective_curve(
     baseline_value_key: str | None = None,
     baseline_label: str = "Visible GD",
     secondary_baseline_value_key: str | None = None,
-    secondary_baseline_label: str = "Visible SGD",
+    secondary_baseline_label: str = "Secondary baseline",
+    tertiary_baseline_value_key: str | None = None,
+    tertiary_baseline_label: str = "Visible Adam",
     comparison_value_key: str | None = None,
     comparison_label: str = "PPO (no oracle)",
+    comparison2_value_key: str | None = None,
+    comparison2_label: str = "PPO visible oracle",
     y_axis_formatter: str | None = None,
 ) -> None:
     if not metrics:
@@ -268,6 +294,21 @@ def plot_objective_curve(
                 sbe, sbv, max_points=1800
             )
 
+    tertiary_baseline_episodes = None
+    tertiary_baseline_values = None
+    tertiary_baseline_smooth = None
+    tertiary_baseline_spread = None
+    tertiary_baseline_raw_x = None
+    tertiary_baseline_raw_y = None
+    if tertiary_baseline_value_key is not None:
+        tbe, tbv = _extract_metric_series(metrics, key=tertiary_baseline_value_key)
+        if tbe.size > 0:
+            tertiary_baseline_episodes = tbe
+            tertiary_baseline_values = tbv
+            tertiary_baseline_smooth = _moving_average(tbv, smooth_window)
+            tertiary_baseline_spread = _rolling_std(tbv, smooth_window)
+            tertiary_baseline_raw_x, tertiary_baseline_raw_y = _downsample(tbe, tbv, max_points=1800)
+
     comparison_episodes = None
     comparison_values = None
     comparison_smooth = None
@@ -283,9 +324,31 @@ def plot_objective_curve(
             comparison_spread = _rolling_std(cv, smooth_window)
             comparison_raw_x, comparison_raw_y = _downsample(ce, cv, max_points=1800)
 
+    comparison2_episodes = None
+    comparison2_values = None
+    comparison2_smooth = None
+    comparison2_spread = None
+    comparison2_raw_x = None
+    comparison2_raw_y = None
+    if comparison2_value_key is not None:
+        ce2, cv2 = _extract_metric_series(metrics, key=comparison2_value_key)
+        if ce2.size > 0:
+            comparison2_episodes = ce2
+            comparison2_values = cv2
+            comparison2_smooth = _moving_average(cv2, smooth_window)
+            comparison2_spread = _rolling_std(cv2, smooth_window)
+            comparison2_raw_x, comparison2_raw_y = _downsample(ce2, cv2, max_points=1800)
+
     fig, ax = _make_axes(figsize=(8.2, 4.8))
-    color, baseline_color, secondary_baseline_color, comparison_color = _plasma_series_colors(
-        num_series=4
+    (
+        color,
+        baseline_color,
+        secondary_baseline_color,
+        tertiary_baseline_color,
+        comparison_color,
+        comparison2_color,
+    ) = _plasma_series_colors(
+        num_series=6
     )
 
     ax.plot(raw_x, raw_y, linewidth=1.1, color=color, alpha=0.22, label="_nolegend_")
@@ -357,6 +420,38 @@ def plot_objective_curve(
                 linewidth=0,
             )
     if (
+        tertiary_baseline_episodes is not None
+        and tertiary_baseline_values is not None
+        and tertiary_baseline_smooth is not None
+    ):
+        assert tertiary_baseline_raw_x is not None and tertiary_baseline_raw_y is not None
+        ax.plot(
+            tertiary_baseline_raw_x,
+            tertiary_baseline_raw_y,
+            linewidth=1.0,
+            color=tertiary_baseline_color,
+            alpha=0.20,
+            label="_nolegend_",
+        )
+        ax.plot(
+            tertiary_baseline_episodes,
+            tertiary_baseline_smooth,
+            linewidth=1.3,
+            color=tertiary_baseline_color,
+            label=tertiary_baseline_label,
+        )
+        if tertiary_baseline_spread is not None and tertiary_baseline_episodes.size >= 12:
+            lower_tb = tertiary_baseline_smooth - tertiary_baseline_spread
+            upper_tb = tertiary_baseline_smooth + tertiary_baseline_spread
+            ax.fill_between(
+                tertiary_baseline_episodes,
+                lower_tb,
+                upper_tb,
+                color=tertiary_baseline_color,
+                alpha=0.09,
+                linewidth=0,
+            )
+    if (
         comparison_episodes is not None
         and comparison_values is not None
         and comparison_smooth is not None
@@ -388,6 +483,38 @@ def plot_objective_curve(
                 alpha=0.08,
                 linewidth=0,
             )
+    if (
+        comparison2_episodes is not None
+        and comparison2_values is not None
+        and comparison2_smooth is not None
+    ):
+        assert comparison2_raw_x is not None and comparison2_raw_y is not None
+        ax.plot(
+            comparison2_raw_x,
+            comparison2_raw_y,
+            linewidth=1.0,
+            color=comparison2_color,
+            alpha=0.18,
+            label="_nolegend_",
+        )
+        ax.plot(
+            comparison2_episodes,
+            comparison2_smooth,
+            linewidth=1.3,
+            color=comparison2_color,
+            label=comparison2_label,
+        )
+        if comparison2_spread is not None and comparison2_episodes.size >= 12:
+            lower_c2 = comparison2_smooth - comparison2_spread
+            upper_c2 = comparison2_smooth + comparison2_spread
+            ax.fill_between(
+                comparison2_episodes,
+                lower_c2,
+                upper_c2,
+                color=comparison2_color,
+                alpha=0.08,
+                linewidth=0,
+            )
     ax.set_xlabel("Training episodes")
     ax.set_ylabel(y_label)
     ax.set_xlim(0.0, min(float(MAX_X_EPISODES), max(1.0, float(episodes[-1]))))
@@ -399,9 +526,17 @@ def plot_objective_curve(
         finite_values = np.concatenate(
             [finite_values, secondary_baseline_values[np.isfinite(secondary_baseline_values)]]
         )
+    if tertiary_baseline_values is not None:
+        finite_values = np.concatenate(
+            [finite_values, tertiary_baseline_values[np.isfinite(tertiary_baseline_values)]]
+        )
     if comparison_values is not None:
         finite_values = np.concatenate(
             [finite_values, comparison_values[np.isfinite(comparison_values)]]
+        )
+    if comparison2_values is not None:
+        finite_values = np.concatenate(
+            [finite_values, comparison2_values[np.isfinite(comparison2_values)]]
         )
     if finite_values.size > 0:
         y_min = float(np.min(finite_values))
@@ -460,14 +595,21 @@ def _align_series_to_grid(
     for seed, metrics in seed_metrics:
         ep, vals = _extract_metric_series(metrics, key=key)
         if ep.size > 0:
-            interp = np.interp(grid, ep, vals, left=np.nan, right=np.nan)
+            # Keep each seed present across the whole common grid so late-stage
+            # multi-seed averages are not biased toward only the longest runs.
+            interp = np.interp(
+                grid,
+                ep,
+                vals,
+                left=float(vals[0]),
+                right=float(vals[-1]),
+            )
             aligned.append((seed, interp))
     if not aligned:
         return grid, np.full(0, np.nan), np.full(0, np.nan), []
     stacked = np.stack([v for _, v in aligned], axis=0)
-    with np.errstate(invalid="ignore"):
-        mean_vals = np.nanmean(stacked, axis=0)
-        std_vals = np.nanstd(stacked, axis=0)
+    mean_vals = np.mean(stacked, axis=0)
+    std_vals = np.std(stacked, axis=0)
     return grid, mean_vals, std_vals, aligned
 
 
@@ -477,12 +619,17 @@ def plot_objective_curve_multi_seed(
     title: str,
     value_key: str = "objective_value",
     y_label: str = "E(F(z))",
+    main_label: str = "PPO with oracle",
     baseline_value_key: str | None = None,
     baseline_label: str = "Visible GD",
     secondary_baseline_value_key: str | None = None,
-    secondary_baseline_label: str = "Visible SGD",
+    secondary_baseline_label: str = "Secondary baseline",
+    tertiary_baseline_value_key: str | None = None,
+    tertiary_baseline_label: str = "Visible Adam",
     comparison_value_key: str | None = None,
     comparison_label: str = "PPO (no oracle)",
+    comparison2_value_key: str | None = None,
+    comparison2_label: str = "PPO visible oracle",
     y_axis_formatter: str | None = None,
 ) -> None:
     """Plot objective-style curves for multiple seeds: individual (faded) + mean (bold) with std band."""
@@ -490,8 +637,15 @@ def plot_objective_curve_multi_seed(
         return
 
     fig, ax = _make_axes(figsize=(8.2, 4.8))
-    color, baseline_color, secondary_baseline_color, comparison_color = _plasma_series_colors(
-        num_series=4
+    (
+        color,
+        baseline_color,
+        secondary_baseline_color,
+        tertiary_baseline_color,
+        comparison_color,
+        comparison2_color,
+    ) = _plasma_series_colors(
+        num_series=6
     )
 
     grid, mean_vals, std_vals, aligned = _align_series_to_grid(
@@ -502,7 +656,7 @@ def plot_objective_curve_multi_seed(
         return
     for _, vals in aligned:
         ax.plot(grid, vals, color=color, linewidth=0.8, alpha=0.25)
-    ax.plot(grid, mean_vals, color=color, linewidth=1.8, label="PPO with oracle")
+    ax.plot(grid, mean_vals, color=color, linewidth=1.8, label=main_label)
     ax.fill_between(
         grid,
         mean_vals - std_vals,
@@ -512,6 +666,7 @@ def plot_objective_curve_multi_seed(
         linewidth=0,
     )
 
+    b_mean = np.asarray([], dtype=np.float64)
     if baseline_value_key is not None:
         b_grid, b_mean, b_std, b_aligned = _align_series_to_grid(
             seed_metrics, key=baseline_value_key, max_episodes=MAX_X_EPISODES
@@ -522,6 +677,7 @@ def plot_objective_curve_multi_seed(
             ax.plot(b_grid, b_mean, color=baseline_color, linewidth=1.4, label=baseline_label)
             ax.fill_between(b_grid, b_mean - b_std, b_mean + b_std, color=baseline_color, alpha=0.15, linewidth=0)
 
+    sb_mean = np.asarray([], dtype=np.float64)
     if secondary_baseline_value_key is not None:
         sb_grid, sb_mean, sb_std, sb_aligned = _align_series_to_grid(
             seed_metrics, key=secondary_baseline_value_key, max_episodes=MAX_X_EPISODES
@@ -532,6 +688,18 @@ def plot_objective_curve_multi_seed(
             ax.plot(sb_grid, sb_mean, color=secondary_baseline_color, linewidth=1.4, label=secondary_baseline_label)
             ax.fill_between(sb_grid, sb_mean - sb_std, sb_mean + sb_std, color=secondary_baseline_color, alpha=0.12, linewidth=0)
 
+    tb_mean = np.asarray([], dtype=np.float64)
+    if tertiary_baseline_value_key is not None:
+        tb_grid, tb_mean, tb_std, tb_aligned = _align_series_to_grid(
+            seed_metrics, key=tertiary_baseline_value_key, max_episodes=MAX_X_EPISODES
+        )
+        if tb_grid.size > 0 and np.any(np.isfinite(tb_mean)):
+            for _, vals in tb_aligned:
+                ax.plot(tb_grid, vals, color=tertiary_baseline_color, linewidth=0.6, alpha=0.2)
+            ax.plot(tb_grid, tb_mean, color=tertiary_baseline_color, linewidth=1.4, label=tertiary_baseline_label)
+            ax.fill_between(tb_grid, tb_mean - tb_std, tb_mean + tb_std, color=tertiary_baseline_color, alpha=0.10, linewidth=0)
+
+    c_mean = np.asarray([], dtype=np.float64)
     if comparison_value_key is not None:
         c_grid, c_mean, c_std, c_aligned = _align_series_to_grid(
             seed_metrics, key=comparison_value_key, max_episodes=MAX_X_EPISODES
@@ -542,10 +710,32 @@ def plot_objective_curve_multi_seed(
             ax.plot(c_grid, c_mean, color=comparison_color, linewidth=1.4, label=comparison_label)
             ax.fill_between(c_grid, c_mean - c_std, c_mean + c_std, color=comparison_color, alpha=0.10, linewidth=0)
 
+    c2_mean = np.asarray([], dtype=np.float64)
+    if comparison2_value_key is not None:
+        c2_grid, c2_mean, c2_std, c2_aligned = _align_series_to_grid(
+            seed_metrics, key=comparison2_value_key, max_episodes=MAX_X_EPISODES
+        )
+        if c2_grid.size > 0 and np.any(np.isfinite(c2_mean)):
+            for _, vals in c2_aligned:
+                ax.plot(c2_grid, vals, color=comparison2_color, linewidth=0.6, alpha=0.2)
+            ax.plot(c2_grid, c2_mean, color=comparison2_color, linewidth=1.4, label=comparison2_label)
+            ax.fill_between(c2_grid, c2_mean - c2_std, c2_mean + c2_std, color=comparison2_color, alpha=0.10, linewidth=0)
+
     ax.set_xlabel("Training episodes")
     ax.set_ylabel(y_label)
     ax.set_xlim(0.0, min(float(MAX_X_EPISODES), float(grid[-1])))
-    finite = mean_vals[np.isfinite(mean_vals)]
+    finite_chunks = [mean_vals[np.isfinite(mean_vals)]]
+    if baseline_value_key is not None:
+        finite_chunks.append(b_mean[np.isfinite(b_mean)])
+    if secondary_baseline_value_key is not None:
+        finite_chunks.append(sb_mean[np.isfinite(sb_mean)])
+    if tertiary_baseline_value_key is not None:
+        finite_chunks.append(tb_mean[np.isfinite(tb_mean)])
+    if comparison_value_key is not None:
+        finite_chunks.append(c_mean[np.isfinite(c_mean)])
+    if comparison2_value_key is not None:
+        finite_chunks.append(c2_mean[np.isfinite(c2_mean)])
+    finite = np.concatenate([chunk for chunk in finite_chunks if chunk.size > 0]) if finite_chunks else np.asarray([], dtype=np.float64)
     if finite.size > 0:
         y_min = float(np.min(finite))
         y_max = float(np.max(finite))
@@ -563,6 +753,154 @@ def plot_objective_curve_multi_seed(
     ax.set_title(title, loc="left", fontsize=11, pad=10)
     ax.legend(loc="upper right", frameon=False)
 
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=180)
+    plt.close(fig)
+
+
+def plot_spatial_optimization_curves_by_method(
+    method_curves: dict[str, np.ndarray],
+    output_path: Path,
+    title: str,
+    method_labels: dict[str, str] | None = None,
+    y_label: str = "Normalized objective E(F(z))",
+) -> None:
+    valid_items: list[tuple[str, np.ndarray]] = []
+    for method_key, curves in method_curves.items():
+        arr = np.asarray(curves, dtype=np.float64)
+        if arr.ndim != 2 or arr.shape[0] < 1 or arr.shape[1] < 2:
+            continue
+        valid_items.append((method_key, arr))
+    if not valid_items:
+        return
+
+    num_methods = len(valid_items)
+    n_cols = 3 if num_methods >= 3 else num_methods
+    n_rows = int(np.ceil(num_methods / max(1, n_cols)))
+    fig, axes = plt.subplots(
+        nrows=n_rows,
+        ncols=n_cols,
+        figsize=(4.9 * n_cols, 3.5 * n_rows),
+        sharex=True,
+        sharey=True,
+    )
+    axes_array = np.asarray(axes).reshape(-1)
+
+    y_min = 0.0
+    y_max = 1.02
+
+    for axis in axes_array:
+        axis.set_facecolor("white")
+        axis.spines["top"].set_visible(False)
+        axis.spines["right"].set_visible(False)
+        axis.spines["left"].set_color("#d0d7de")
+        axis.spines["bottom"].set_color("#d0d7de")
+        axis.tick_params(colors="#57606a")
+        axis.grid(True, which="major", alpha=0.22, linewidth=0.8)
+        axis.grid(True, which="minor", alpha=0.09, linewidth=0.5)
+        axis.minorticks_on()
+        axis.set_ylim(y_min, y_max)
+
+    for idx, (method_key, curves) in enumerate(valid_items):
+        ax = axes_array[idx]
+        label = method_labels.get(method_key, method_key) if method_labels is not None else method_key
+        color = _spatial_optimization_method_color(method_key, idx, num_methods)
+        steps = np.arange(curves.shape[1], dtype=np.int64)
+
+        for row in curves:
+            ax.plot(steps, row, color=color, linewidth=0.7, alpha=0.10)
+        mean_curve = np.nanmean(curves, axis=0)
+        std_curve = np.nanstd(curves, axis=0)
+        ax.plot(steps, mean_curve, color=color, linewidth=1.9, label=f"{label} mean")
+        ax.fill_between(
+            steps,
+            mean_curve - std_curve,
+            mean_curve + std_curve,
+            color=color,
+            alpha=0.20,
+            linewidth=0.0,
+            label="±1 std",
+        )
+        ax.set_title(f"{label} (tasks={curves.shape[0]})", loc="left", fontsize=10, pad=8)
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+        if idx == 0:
+            ax.legend(loc="upper right", frameon=False, fontsize=8)
+
+    for idx in range(num_methods, axes_array.size):
+        axes_array[idx].set_visible(False)
+
+    for idx, axis in enumerate(axes_array):
+        if not axis.get_visible():
+            continue
+        if idx // max(1, n_cols) == n_rows - 1:
+            axis.set_xlabel("Optimization step")
+        if idx % max(1, n_cols) == 0:
+            axis.set_ylabel(y_label)
+
+    fig.suptitle(title, x=0.01, y=0.995, ha="left", va="top", fontsize=11)
+    fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.97])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=180)
+    plt.close(fig)
+
+
+def plot_spatial_optimization_curve_summary(
+    method_mean_curves: dict[str, np.ndarray],
+    output_path: Path,
+    title: str,
+    method_std_curves: dict[str, np.ndarray] | None = None,
+    method_labels: dict[str, str] | None = None,
+    y_label: str = "Normalized objective E(F(z))",
+    x_label: str = "Optimization step",
+) -> None:
+    valid: list[tuple[str, np.ndarray]] = []
+    for method_key, mean_curve in method_mean_curves.items():
+        mean_arr = np.asarray(mean_curve, dtype=np.float64).reshape(-1)
+        if mean_arr.size < 2:
+            continue
+        valid.append((method_key, mean_arr))
+    if not valid:
+        return
+
+    fig, ax = _make_axes(figsize=(8.4, 4.9))
+    finite_chunks: list[np.ndarray] = []
+    smooth_window = 16
+    for idx, (method_key, mean_arr) in enumerate(valid):
+        color = _spatial_optimization_method_color(method_key, idx, len(valid))
+        label = method_labels.get(method_key, method_key) if method_labels is not None else method_key
+        steps = np.arange(mean_arr.size, dtype=np.int64)
+        smoothed_mean_arr = _trailing_running_average(mean_arr, smooth_window)
+        ax.plot(
+            steps,
+            mean_arr,
+            color=color,
+            linewidth=1.1,
+            alpha=0.30,
+            label="_nolegend_",
+        )
+        ax.plot(steps, smoothed_mean_arr, color=color, linewidth=2.1, label=label)
+        finite = np.concatenate(
+            [
+                mean_arr[np.isfinite(mean_arr)],
+                smoothed_mean_arr[np.isfinite(smoothed_mean_arr)],
+            ]
+        )
+        if finite.size > 0:
+            finite_chunks.append(finite)
+
+    y_min = 0.0
+    y_max = 1.02
+    horizon = max(arr.size for _, arr in valid) - 1
+    ax.set_xlim(0.0, max(1.0, float(horizon)))
+    ax.set_ylim(y_min, y_max)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=8, integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+    ax.set_title(title, loc="left", fontsize=11, pad=10)
+    ax.legend(loc="upper right", frameon=False)
     fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=180)
@@ -660,13 +998,15 @@ def plot_spatial_trajectory_with_gradients(
     move_vectors_xy: np.ndarray,
     target_xy: np.ndarray,
     baseline_trajectory_xy: np.ndarray | None,
-    sgd_baseline_trajectory_xy: np.ndarray | None,
+    adam_baseline_trajectory_xy: np.ndarray | None,
     no_oracle_trajectory_xy: np.ndarray | None,
+    visible_gradient_trajectory_xy: np.ndarray | None,
     output_path: Path,
     title: str,
     landscape_x: np.ndarray | None = None,
     landscape_y: np.ndarray | None = None,
     landscape_energy: np.ndarray | None = None,
+    landscape_label: str = "E(F(z))",
 ) -> None:
     if trajectory_xy.ndim != 2 or trajectory_xy.shape[1] != 2 or trajectory_xy.shape[0] < 2:
         return
@@ -694,7 +1034,7 @@ def plot_spatial_trajectory_with_gradients(
             alpha=0.72,
             zorder=1,
         )
-        fig.colorbar(contour, ax=ax, pad=0.01, fraction=0.045, label="E(F(z))")
+        fig.colorbar(contour, ax=ax, pad=0.01, fraction=0.045, label=landscape_label)
 
     x = trajectory_xy[:, 0]
     y = trajectory_xy[:, 1]
@@ -709,7 +1049,7 @@ def plot_spatial_trajectory_with_gradients(
         markersize=2.3,
         markerfacecolor="#111111",
         markeredgewidth=0.0,
-        label="Trajectory",
+        label="PPO hidden-gradient oracle",
     )
     ax.scatter([x[0]], [y[0]], color="#fb8500", edgecolor="black", linewidth=0.5, s=54, zorder=6, label="Start")
     ax.scatter(
@@ -745,26 +1085,26 @@ def plot_spatial_trajectory_with_gradients(
             label="2D grad-descent baseline",
         )
     if (
-        sgd_baseline_trajectory_xy is not None
-        and sgd_baseline_trajectory_xy.ndim == 2
-        and sgd_baseline_trajectory_xy.shape[1] == 2
-        and sgd_baseline_trajectory_xy.shape[0] >= 2
+        adam_baseline_trajectory_xy is not None
+        and adam_baseline_trajectory_xy.ndim == 2
+        and adam_baseline_trajectory_xy.shape[1] == 2
+        and adam_baseline_trajectory_xy.shape[0] >= 2
     ):
-        sx = sgd_baseline_trajectory_xy[:, 0]
-        sy = sgd_baseline_trajectory_xy[:, 1]
+        adam_x = adam_baseline_trajectory_xy[:, 0]
+        ay = adam_baseline_trajectory_xy[:, 1]
         ax.plot(
-            sx,
-            sy,
-            color="#8250df",
+            adam_x,
+            ay,
+            color="green",
             linestyle="-",
             linewidth=1.5,
-            alpha=0.90,
+            alpha=0.92,
             zorder=6,
             marker="o",
             markersize=2.3,
-            markerfacecolor="#8250df",
+            markerfacecolor="green",
             markeredgewidth=0.0,
-            label="2D SGD baseline",
+            label="2D Adam baseline",
         )
     if (
         no_oracle_trajectory_xy is not None
@@ -786,7 +1126,29 @@ def plot_spatial_trajectory_with_gradients(
             markersize=2.3,
             markerfacecolor="#0969da",
             markeredgewidth=0.0,
-            label="PPO no-oracle baseline",
+            label="PPO no oracle",
+        )
+    if (
+        visible_gradient_trajectory_xy is not None
+        and visible_gradient_trajectory_xy.ndim == 2
+        and visible_gradient_trajectory_xy.shape[1] == 2
+        and visible_gradient_trajectory_xy.shape[0] >= 2
+    ):
+        vx = visible_gradient_trajectory_xy[:, 0]
+        vy = visible_gradient_trajectory_xy[:, 1]
+        ax.plot(
+            vx,
+            vy,
+            color="limegreen",
+            linestyle="-",
+            linewidth=1.5,
+            alpha=0.92,
+            zorder=6,
+            marker="o",
+            markersize=2.3,
+            markerfacecolor="limegreen",
+            markeredgewidth=0.0,
+            label="PPO visible-gradient oracle",
         )
 
     x_min = min(float(np.min(x)), float(target_xy[0]))
@@ -804,15 +1166,15 @@ def plot_spatial_trajectory_with_gradients(
         y_min = min(y_min, float(np.min(baseline_trajectory_xy[:, 1])))
         y_max = max(y_max, float(np.max(baseline_trajectory_xy[:, 1])))
     if (
-        sgd_baseline_trajectory_xy is not None
-        and sgd_baseline_trajectory_xy.ndim == 2
-        and sgd_baseline_trajectory_xy.shape[1] == 2
-        and sgd_baseline_trajectory_xy.shape[0] >= 1
+        adam_baseline_trajectory_xy is not None
+        and adam_baseline_trajectory_xy.ndim == 2
+        and adam_baseline_trajectory_xy.shape[1] == 2
+        and adam_baseline_trajectory_xy.shape[0] >= 1
     ):
-        x_min = min(x_min, float(np.min(sgd_baseline_trajectory_xy[:, 0])))
-        x_max = max(x_max, float(np.max(sgd_baseline_trajectory_xy[:, 0])))
-        y_min = min(y_min, float(np.min(sgd_baseline_trajectory_xy[:, 1])))
-        y_max = max(y_max, float(np.max(sgd_baseline_trajectory_xy[:, 1])))
+        x_min = min(x_min, float(np.min(adam_baseline_trajectory_xy[:, 0])))
+        x_max = max(x_max, float(np.max(adam_baseline_trajectory_xy[:, 0])))
+        y_min = min(y_min, float(np.min(adam_baseline_trajectory_xy[:, 1])))
+        y_max = max(y_max, float(np.max(adam_baseline_trajectory_xy[:, 1])))
     if (
         no_oracle_trajectory_xy is not None
         and no_oracle_trajectory_xy.ndim == 2
@@ -823,6 +1185,16 @@ def plot_spatial_trajectory_with_gradients(
         x_max = max(x_max, float(np.max(no_oracle_trajectory_xy[:, 0])))
         y_min = min(y_min, float(np.min(no_oracle_trajectory_xy[:, 1])))
         y_max = max(y_max, float(np.max(no_oracle_trajectory_xy[:, 1])))
+    if (
+        visible_gradient_trajectory_xy is not None
+        and visible_gradient_trajectory_xy.ndim == 2
+        and visible_gradient_trajectory_xy.shape[1] == 2
+        and visible_gradient_trajectory_xy.shape[0] >= 1
+    ):
+        x_min = min(x_min, float(np.min(visible_gradient_trajectory_xy[:, 0])))
+        x_max = max(x_max, float(np.max(visible_gradient_trajectory_xy[:, 0])))
+        y_min = min(y_min, float(np.min(visible_gradient_trajectory_xy[:, 1])))
+        y_max = max(y_max, float(np.max(visible_gradient_trajectory_xy[:, 1])))
     if landscape_x is not None and landscape_y is not None:
         x_min = min(x_min, float(np.min(landscape_x)))
         x_max = max(x_max, float(np.max(landscape_x)))

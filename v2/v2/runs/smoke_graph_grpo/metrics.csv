@@ -1,4 +1,0 @@
-episodes,steps,success,success_rate,final_objective,avg_final_objective,baseline_final_objective,avg_baseline_final_objective,sgd_baseline_final_objective,avg_sgd_baseline_final_objective,no_oracle_final_objective,avg_no_oracle_final_objective,final_ref_distance,avg_final_ref_distance,baseline_final_ref_distance,avg_baseline_final_ref_distance,sgd_baseline_final_ref_distance,avg_sgd_baseline_final_ref_distance,no_oracle_final_ref_distance,avg_no_oracle_final_ref_distance,avg_path_len,avg_shortest_dist,avg_stretch,window_size,policy_loss,value_loss,entropy,lr,no_oracle_lr
-1,64,0.0,0.0,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,8.0,4.0,nan,1,0.0,0.0,0.0,0.0003,nan
-2,64,0.0,0.0,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,8.0,4.0,nan,2,0.0,0.0,0.0,0.0003,nan
-3,64,0.0,0.0,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,nan,8.0,4.0,nan,3,0.0,0.0,0.0,0.0003,nan

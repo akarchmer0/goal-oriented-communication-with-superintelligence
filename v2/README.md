@@ -31,12 +31,13 @@ python3 -m v2.train \
   --spatial_token_dim 10 \
   --spatial_basis_complexity 4 \
   --spatial_coord_limit 8 \
-  --spatial_step_size 0.35 \
-  --spatial_sgd_gradient_noise_std 0.1 \
-  --spatial_success_threshold 1.0 \
+  --base_lr 1.0 \
+  --spatial_success_threshold 0.01 \
   --sensing S0 \
   --train_steps 300000
 ```
+
+When running `--oracle_mode convex_gradient` with baselines enabled (default), training now also runs a parallel **PPO visible gradient** baseline for direct comparison.
 
 Regenerate the spatial learning curves afterward without retraining:
 
@@ -45,12 +46,82 @@ python3 -m v2.plot_learning_curves \
   --run_dir v2/runs/<run_name>
 ```
 
+Run the full spatial ablation suite (oracle-only PPO, no baselines in training):
+
+```bash
+python3 -m v2.run_spatial_ablation_suite \
+  --seeds 0,1,2,3,4 \
+  --suite_output_dir plots/spatial_ablation_suite \
+  --logdir v2/runs
+```
+
+Regenerate ablation plots later (no retraining), useful for formatting iteration:
+
+```bash
+python3 -m v2.plot_ablations \
+  --manifest plots/spatial_ablation_suite/manifest.json
+```
+
+If you want training only, run the suite with `--skip_plotting` and use `v2.plot_ablations` afterward.
+
+This produces:
+- per-run `metrics.jsonl` and `summary.json`
+- per-run trajectory JSONL + heatmap JSON (for 2D sweeps)
+- suite `manifest.json`
+- curve plots (individual and mean) for objective/distance/success rate
+- heatmap plots (individual and mean) for oracle-noise / reward-noise / D sweeps
+- no heatmaps for the `H` sweep by design
+- `H` sweep uses budget scaling by default (`step_size *= sqrt(H/2)`) for fairer cross-dimension comparison
+
 Interpretation:
 - hidden objective is convex in `R^D`: `E(s)=0.5||s-s*||^2`
 - human controls only `z ∈ R^2`; hidden state is `s=F(z)` with nonlinear sinusoidal basis
 - oracle sends the true hidden-space gradient `g_t = s_t - s*` each step
 - policy learns `(g_t, z_t) -> a_t` with **continuous 2D actions** (any direction), using reward from energy decrease `E(F(z_t)) - E(F(z_{t+1}))`
-- spatial diagnostics now include both `2D GD` and noisy-gradient `2D SGD` baselines
+- spatial diagnostics now include `2D GD` and `2D Adam` baselines
+
+## Spatial Optimizer Studies
+
+Use this runner to keep the two optimizer studies separate and reproducible:
+
+```bash
+python3 -m v2.run_spatial_optimizer_studies \
+  --study all \
+  --seeds 0,1,2,3,4 \
+  --suite_output_dir plots/spatial_optimizer_studies \
+  --logdir v2/runs
+```
+
+Available studies:
+
+- `meta_optimizer`: fixed Fourier map per seed, random start/target per task, equal optimization horizon across methods (`GD`, `Adam`, `RL no oracle`, `RL visible oracle`, `RL hidden gradient`).
+- `search_algorithm`: fixed map + fixed start/target per seed (`--spatial_fixed_start_target` behavior), wall-clock-equalized search budgets, and includes `random_search` baseline.
+
+Useful flags:
+
+- `--meta_num_tasks` and `--meta_eval_horizon` control post-training optimizer evaluation.
+- `--search_wallclock_budgets_sec` controls compute-equalized search budgets.
+- `--search_eval_horizon` and `--search_max_episodes_per_method` control per-budget search rollouts.
+- `--search_rl_deterministic` switches search-policy evaluation from stochastic to deterministic actions.
+
+Outputs are written under:
+
+- `plots/spatial_optimizer_studies/meta_optimizer/...`
+- `plots/spatial_optimizer_studies/search_algorithm/...`
+
+Each study writes:
+
+- per-seed evaluation JSON (raw task/episode data)
+- aggregate JSON for post-hoc analysis
+- summary plots
+- top-level `manifest.json` and `suite_summary.json`
+
+Regenerate optimizer-study plots later without retraining:
+
+```bash
+python3 -m v2.plot_spatial_optimizer_studies \
+  --manifest plots/spatial_optimizer_studies/manifest.json
+```
 
 ## Requested Experiments Only
 
@@ -118,7 +189,8 @@ Training runs go to `v2/runs/<run_name>/` with:
 - `metrics.csv`
 - `metrics.jsonl`
 - `summary.json`
-- `spatial_trajectory_with_gradients.png` (for `--task spatial`)
+- `spatial_trajectory_with_gradients.png` (PPO hidden + GD/Adam, for `--task spatial`)
+- `spatial_trajectory_with_gradients_ppo_comparison.png` (PPO hidden vs visible vs no-oracle)
 
 Learning-curve plots can be regenerated into a run directory with `v2.plot_learning_curves`:
 
@@ -139,5 +211,5 @@ Plotting outputs go to `plots/`:
 
 ## Notes
 
-- CPU-only (no GPU required or used).
+- CPU-only by default; use `--device cuda` (or `cuda:0`) to use GPU when available.
 - The plotting script reads existing run outputs from the manifest and does not call training.

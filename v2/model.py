@@ -129,7 +129,8 @@ class PolicyValueNet(nn.Module):
                 action = policy_output
             else:
                 action = distribution.rsample()
-            logprob = distribution.log_prob(action).sum(dim=-1)
+            # Keep continuous-policy objective approximately invariant to action dimension.
+            logprob = distribution.log_prob(action).mean(dim=-1)
         return action, logprob, value, next_hidden_state
 
     def evaluate_actions(
@@ -151,6 +152,7 @@ class PolicyValueNet(nn.Module):
             logprob = distribution.log_prob(actions)
             entropy = distribution.entropy()
         else:
-            logprob = distribution.log_prob(actions).sum(dim=-1)
-            entropy = distribution.entropy().sum(dim=-1)
+            # Match act(): average across dimensions to avoid scaling pressure with action_dim.
+            logprob = distribution.log_prob(actions).mean(dim=-1)
+            entropy = distribution.entropy().mean(dim=-1)
         return logprob, entropy, value

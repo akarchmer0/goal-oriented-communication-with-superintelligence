@@ -94,6 +94,36 @@ def _build_spatial_curve_metrics(metric_rows: list[dict]) -> list[dict]:
         objective_value = float(row.get("avg_final_objective", float("nan")))
         if not np.isfinite(objective_value):
             continue
+        visible_success = row.get(
+            "avg_visible_gradient_success_rate",
+            row.get(
+                "avg_visible_oracle_success_rate",
+                row.get(
+                    "visible_gradient_success_rate",
+                    row.get("visible_oracle_success_rate", float("nan")),
+                ),
+            ),
+        )
+        visible_objective = row.get(
+            "avg_visible_gradient_final_objective",
+            row.get(
+                "avg_visible_oracle_final_objective",
+                row.get(
+                    "visible_gradient_final_objective",
+                    row.get("visible_oracle_final_objective", float("nan")),
+                ),
+            ),
+        )
+        visible_distance = row.get(
+            "avg_visible_gradient_final_ref_distance",
+            row.get(
+                "avg_visible_oracle_final_ref_distance",
+                row.get(
+                    "visible_gradient_final_ref_distance",
+                    row.get("visible_oracle_final_ref_distance", float("nan")),
+                ),
+            ),
+        )
         curve_metrics.append(
             {
                 "episodes": int(row["episodes"]),
@@ -101,35 +131,53 @@ def _build_spatial_curve_metrics(metric_rows: list[dict]) -> list[dict]:
                 "baseline_success_rate": float(
                     row.get("avg_baseline_success_rate", float("nan"))
                 ),
-                "sgd_baseline_success_rate": float(
-                    row.get("avg_sgd_baseline_success_rate", float("nan"))
+                "adam_baseline_success_rate": float(
+                    row.get("avg_adam_baseline_success_rate", float("nan"))
                 ),
                 "no_oracle_success_rate": float(
                     row.get("avg_no_oracle_success_rate", float("nan"))
+                ),
+                "visible_gradient_success_rate": float(
+                    visible_success
                 ),
                 "objective_value": objective_value,
                 "baseline_objective_value": float(
                     row.get("avg_baseline_final_objective", float("nan"))
                 ),
-                "sgd_baseline_objective_value": float(
-                    row.get("avg_sgd_baseline_final_objective", float("nan"))
+                "adam_baseline_objective_value": float(
+                    row.get("avg_adam_baseline_final_objective", float("nan"))
                 ),
                 "no_oracle_objective_value": float(
                     row.get("avg_no_oracle_final_objective", float("nan"))
+                ),
+                "visible_gradient_objective_value": float(
+                    visible_objective
                 ),
                 "distance_value": float(row.get("avg_final_ref_distance", float("nan"))),
                 "baseline_distance_value": float(
                     row.get("avg_baseline_final_ref_distance", float("nan"))
                 ),
-                "sgd_baseline_distance_value": float(
-                    row.get("avg_sgd_baseline_final_ref_distance", float("nan"))
+                "adam_baseline_distance_value": float(
+                    row.get("avg_adam_baseline_final_ref_distance", float("nan"))
                 ),
                 "no_oracle_distance_value": float(
                     row.get("avg_no_oracle_final_ref_distance", float("nan"))
                 ),
+                "visible_gradient_distance_value": float(
+                    visible_distance
+                ),
             }
         )
     return curve_metrics
+
+
+def _spatial_main_label(config: dict) -> str:
+    mode = str(config.get("oracle_mode", ""))
+    if mode == "visible_gradient":
+        return "PPO visible gradient"
+    if mode == "convex_gradient":
+        return "PPO hidden gradient"
+    return "PPO with oracle"
 
 
 def _png_name(base: str, suffix: str | None) -> str:
@@ -161,7 +209,6 @@ def plot_learning_curves_for_run(
     running_avg_window = int(config.get("running_avg_window", 100))
     sensing = str(config.get("sensing", "S0"))
     reward_noise_std = float(config.get("reward_noise_std", 0.0))
-    sgd_noise_std = float(config.get("spatial_sgd_gradient_noise_std", 0.1))
 
     resolved_output_dir.mkdir(parents=True, exist_ok=True)
     output_paths: list[Path] = []
@@ -198,6 +245,7 @@ def plot_learning_curves_for_run(
         raise ValueError(f"Unsupported task: {task}")
 
     curve_metrics = _build_spatial_curve_metrics(metric_rows)
+    main_oracle_label = _spatial_main_label(config)
     has_success_rate = any(
         np.isfinite(float(m.get("success_rate", float("nan")))) for m in curve_metrics
     )
@@ -215,13 +263,15 @@ def plot_learning_curves_for_run(
             title=success_rate_title,
             value_key="success_rate",
             y_label="Success rate",
-            main_label="PPO with oracle",
+            main_label=main_oracle_label,
             baseline_value_key="baseline_success_rate",
             baseline_label="Visible GD",
-            secondary_baseline_value_key="sgd_baseline_success_rate",
-            secondary_baseline_label="Visible SGD",
+            tertiary_baseline_value_key="adam_baseline_success_rate",
+            tertiary_baseline_label="Visible Adam",
             comparison_value_key="no_oracle_success_rate",
             comparison_label="PPO (no oracle)",
+            comparison2_value_key="visible_gradient_success_rate",
+            comparison2_label="PPO visible oracle",
             y_axis_formatter="percent",
         )
         output_paths.append(success_rate_output)
@@ -246,13 +296,15 @@ def plot_learning_curves_for_run(
         title=objective_title,
         value_key="objective_value",
         y_label="E(F(z))",
-        main_label="PPO with oracle",
+        main_label=main_oracle_label,
         baseline_value_key="baseline_objective_value",
         baseline_label="Visible GD",
-        secondary_baseline_value_key="sgd_baseline_objective_value",
-        secondary_baseline_label="Visible SGD",
+        tertiary_baseline_value_key="adam_baseline_objective_value",
+        tertiary_baseline_label="Visible Adam",
         comparison_value_key="no_oracle_objective_value",
         comparison_label="PPO (no oracle)",
+        comparison2_value_key="visible_gradient_objective_value",
+        comparison2_label="PPO visible oracle",
     )
     output_paths.append(objective_output)
 
@@ -270,13 +322,15 @@ def plot_learning_curves_for_run(
         title=distance_title,
         value_key="distance_value",
         y_label="Euclidean distance to reference min",
-        main_label="PPO with oracle",
+        main_label=main_oracle_label,
         baseline_value_key="baseline_distance_value",
         baseline_label="Visible GD",
-        secondary_baseline_value_key="sgd_baseline_distance_value",
-        secondary_baseline_label="Visible SGD",
+        tertiary_baseline_value_key="adam_baseline_distance_value",
+        tertiary_baseline_label="Visible Adam",
         comparison_value_key="no_oracle_distance_value",
         comparison_label="PPO (no oracle)",
+        comparison2_value_key="visible_gradient_distance_value",
+        comparison2_label="PPO visible oracle",
     )
     output_paths.append(distance_output)
     return output_paths
@@ -301,10 +355,10 @@ def plot_learning_curves_multi_seed(
         )
 
     config = _read_json(runs[0][0] / "config.json")
+    main_oracle_label = _spatial_main_label(config)
     running_avg_window = int(config.get("running_avg_window", 100))
     sensing = str(config.get("sensing", "S0"))
     reward_noise_std = float(config.get("reward_noise_std", 0.0))
-    sgd_noise_std = float(config.get("spatial_sgd_gradient_noise_std", 0.1))
     title_context = (
         f"D={int(config.get('spatial_hidden_dim', 0))}, "
         f"visible={int(config.get('spatial_visible_dim', 0))}, "
@@ -353,12 +407,15 @@ def plot_learning_curves_multi_seed(
             title=success_rate_title,
             value_key="success_rate",
             y_label="Success rate",
+            main_label=main_oracle_label,
             baseline_value_key="baseline_success_rate",
             baseline_label="Visible GD",
-            secondary_baseline_value_key="sgd_baseline_success_rate",
-            secondary_baseline_label="Visible SGD",
+            tertiary_baseline_value_key="adam_baseline_success_rate",
+            tertiary_baseline_label="Visible Adam",
             comparison_value_key="no_oracle_success_rate",
             comparison_label="PPO (no oracle)",
+            comparison2_value_key="visible_gradient_success_rate",
+            comparison2_label="PPO visible oracle",
             y_axis_formatter="percent",
         )
         output_paths.append(resolved_output_dir / "success_rate_vs_episodes_mean.png")
@@ -374,12 +431,15 @@ def plot_learning_curves_multi_seed(
         title=objective_title,
         value_key="objective_value",
         y_label="E(F(z))",
+        main_label=main_oracle_label,
         baseline_value_key="baseline_objective_value",
         baseline_label="Visible GD",
-        secondary_baseline_value_key="sgd_baseline_objective_value",
-        secondary_baseline_label="Visible SGD",
+        tertiary_baseline_value_key="adam_baseline_objective_value",
+        tertiary_baseline_label="Visible Adam",
         comparison_value_key="no_oracle_objective_value",
         comparison_label="PPO (no oracle)",
+        comparison2_value_key="visible_gradient_objective_value",
+        comparison2_label="PPO visible oracle",
     )
     output_paths.append(resolved_output_dir / "objective_vs_episodes_mean.png")
 
@@ -394,12 +454,15 @@ def plot_learning_curves_multi_seed(
         title=distance_title,
         value_key="distance_value",
         y_label="Euclidean distance to reference min",
+        main_label=main_oracle_label,
         baseline_value_key="baseline_distance_value",
         baseline_label="Visible GD",
-        secondary_baseline_value_key="sgd_baseline_distance_value",
-        secondary_baseline_label="Visible SGD",
+        tertiary_baseline_value_key="adam_baseline_distance_value",
+        tertiary_baseline_label="Visible Adam",
         comparison_value_key="no_oracle_distance_value",
         comparison_label="PPO (no oracle)",
+        comparison2_value_key="visible_gradient_distance_value",
+        comparison2_label="PPO visible oracle",
     )
     output_paths.append(resolved_output_dir / "distance_vs_episodes_mean.png")
 
