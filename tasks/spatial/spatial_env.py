@@ -33,10 +33,13 @@ class VectorizedSpatialEnv:
         baseline_lr_adam: float | None = None,
         success_threshold: float = 0.01,
         basis_complexity: int = 3,
+        freq_sparsity: int = 0,
         f_type: str = "FOURIER",
         refresh_map_each_episode: bool = False,
         compute_episode_baselines: bool = True,
         fixed_start_target: bool = False,
+        lattice_rl: bool = False,
+        lattice_granularity: int = 20,
     ):
         if sensing not in {"S0", "S1"}:
             raise ValueError("sensing must be S0 or S1")
@@ -81,6 +84,14 @@ class VectorizedSpatialEnv:
         self.baseline_lr_adam = adam_lr
         self.success_threshold = float(success_threshold)
         self.basis_complexity = int(basis_complexity)
+        # freq_sparsity r: max nonzero components per frequency vector.
+        # 0 means dense (all d components nonzero, original behavior).
+        r = int(freq_sparsity)
+        if r < 0:
+            raise ValueError("freq_sparsity must be >= 0")
+        if r > int(visible_dim):
+            raise ValueError("freq_sparsity must be <= visible_dim")
+        self.freq_sparsity = r if r > 0 else int(visible_dim)
         self.f_type = map_family
         self.refresh_map_each_episode = bool(refresh_map_each_episode)
         self.compute_episode_baselines = bool(compute_episode_baselines)
@@ -91,8 +102,24 @@ class VectorizedSpatialEnv:
         self._fixed_target_min_xy: np.ndarray | None = None
         self._fixed_source_xy: np.ndarray | None = None
 
-        # The policy emits a continuous (direction, step_raw) vector.
-        self.action_dim = self.visible_dim + 1
+        # Lattice RL mode: discrete actions over adjacent lattice nodes.
+        self.lattice_rl = bool(lattice_rl)
+        self.lattice_granularity = int(lattice_granularity)
+        if self.lattice_rl:
+            if self.lattice_granularity < 2:
+                raise ValueError("lattice_granularity must be >= 2")
+            # Action space: 2 * visible_dim discrete actions (±1 along each axis).
+            self.action_dim = 2 * self.visible_dim
+            # Precompute lattice spacing.
+            self.lattice_spacing = float(2.0 * self.coord_limit / (self.lattice_granularity - 1))
+            # Lattice node coordinates along each dimension.
+            self.lattice_ticks = np.linspace(
+                -self.coord_limit, self.coord_limit,
+                num=self.lattice_granularity, dtype=np.float32,
+            )
+        else:
+            # The policy emits a continuous (direction, step_raw) vector.
+            self.action_dim = self.visible_dim + 1
         self.oracle_token_dim = int(self.oracle.token_dim)
         # Include z coordinates so policy can learn (g_t, z_t) -> action.
         self.token_feature_dim = self.oracle_token_dim + self.visible_dim
@@ -131,6 +158,30 @@ class VectorizedSpatialEnv:
         self.mlp_b2 = np.zeros((self.n_env, self.hidden_dim), dtype=np.float32)
         self.s_star = np.zeros((self.n_env, self.hidden_dim), dtype=np.float32)
 
+    def _sample_sparse_freq(self, shape: tuple[int, int]) -> np.ndarray:
+        """Sample frequency vectors with at most `self.freq_sparsity` nonzero components.
+
+        Each row gets exactly min(freq_sparsity, visible_dim) randomly chosen
+        active dimensions; the remaining dimensions are zero.  Active components
+        are drawn from {±1, …, ±K} where K = basis_complexity.
+        """
+        n_rows, d = shape
+        r = min(self.freq_sparsity, d)
+        freq_low = 1
+        freq_high = self.basis_complexity + 1
+
+        w = np.zeros((n_rows, d), dtype=np.float32)
+        for i in range(n_rows):
+            active = self.rng.choice(d, size=r, replace=False)
+            magnitudes = self.rng.integers(
+                freq_low, freq_high, size=r, dtype=np.int32
+            ).astype(np.float32)
+            signs = self.rng.choice(
+                np.asarray([-1.0, 1.0], dtype=np.float32), size=r
+            )
+            w[i, active] = magnitudes * signs
+        return w
+
     def _sample_map_parameters(self) -> dict[str, np.ndarray]:
         if self.f_type == "FOURIER":
             # F(z) = A z + a*sin(Wz + b) + c*cos(Vz + d)
@@ -140,24 +191,9 @@ class VectorizedSpatialEnv:
                 size=(self.hidden_dim, self.visible_dim),
             ).astype(np.float32)
 
-            freq_low = 1
-            freq_high = self.basis_complexity + 1
-            sin_w = self.rng.integers(
-                freq_low,
-                freq_high,
-                size=(self.hidden_dim, self.visible_dim),
-                dtype=np.int32,
-            ).astype(np.float32)
-            cos_w = self.rng.integers(
-                freq_low,
-                freq_high,
-                size=(self.hidden_dim, self.visible_dim),
-                dtype=np.int32,
-            ).astype(np.float32)
-            sign_sin = self.rng.choice(np.asarray([-1.0, 1.0], dtype=np.float32), size=sin_w.shape)
-            sign_cos = self.rng.choice(np.asarray([-1.0, 1.0], dtype=np.float32), size=cos_w.shape)
-            sin_w *= sign_sin
-            cos_w *= sign_cos
+            freq_shape = (self.hidden_dim, self.visible_dim)
+            sin_w = self._sample_sparse_freq(freq_shape)
+            cos_w = self._sample_sparse_freq(freq_shape)
 
             sin_phase = self.rng.uniform(0.0, 2.0 * np.pi, size=self.hidden_dim).astype(np.float32)
             cos_phase = self.rng.uniform(0.0, 2.0 * np.pi, size=self.hidden_dim).astype(np.float32)
@@ -370,12 +406,43 @@ class VectorizedSpatialEnv:
         z_norm = np.clip(z / self.coord_limit, -1.0, 1.0).astype(np.float32)
         return np.concatenate([token, z_norm], axis=0).astype(np.float32)
 
+    def _snap_to_lattice(self, z: np.ndarray) -> np.ndarray:
+        """Snap a position to the nearest lattice node."""
+        indices = np.round(
+            (z + self.coord_limit) / self.lattice_spacing
+        ).astype(np.int32)
+        indices = np.clip(indices, 0, self.lattice_granularity - 1)
+        return self.lattice_ticks[indices].astype(np.float32)
+
+    def _apply_lattice_action(self, z: np.ndarray, action_index: int) -> np.ndarray:
+        """Move to an adjacent lattice node given a discrete action index.
+
+        Actions are enumerated as:
+            0 => +step along dim 0
+            1 => -step along dim 0
+            2 => +step along dim 1
+            3 => -step along dim 1
+            ...
+            2*d-2 => +step along dim d-1
+            2*d-1 => -step along dim d-1
+        """
+        action_index = int(action_index)
+        dim = action_index // 2
+        sign = 1.0 if (action_index % 2 == 0) else -1.0
+        delta = np.zeros(self.visible_dim, dtype=np.float32)
+        delta[dim] = float(sign * self.lattice_spacing)
+        updated = z + delta
+        clipped = np.clip(updated, -self.coord_limit, self.coord_limit).astype(np.float32)
+        return self._snap_to_lattice(clipped)
+
     def _apply_action(
         self,
         z: np.ndarray,
-        action: np.ndarray,
+        action: np.ndarray | int,
         step_scale_override: float | None = None,
     ) -> np.ndarray:
+        if self.lattice_rl:
+            return self._apply_lattice_action(z, int(action))
         action_vector = np.asarray(action, dtype=np.float32).reshape(-1)
         if action_vector.shape[0] not in {self.visible_dim, self.visible_dim + 1}:
             raise ValueError(
@@ -411,11 +478,12 @@ class VectorizedSpatialEnv:
         return np.clip(updated, -self.coord_limit, self.coord_limit).astype(np.float32)
 
     def _sample_xy(self) -> np.ndarray:
-        return self.rng.uniform(
+        xy = self.rng.uniform(
             low=-self.coord_limit,
             high=self.coord_limit,
             size=self.visible_dim,
         ).astype(np.float32)
+        return xy
 
     def _estimate_max_objective(self, samples: int = 2048, env_index: int = 0) -> float:
         sampled = self.objective_scale_rng.uniform(
@@ -455,12 +523,17 @@ class VectorizedSpatialEnv:
             if self._fixed_target_min_xy is None:
                 self._fixed_target_min_xy = self._sample_xy().astype(np.float32)
             if self._fixed_source_xy is None:
-                self._fixed_source_xy = self._sample_xy().astype(np.float32)
+                source_xy = self._sample_xy().astype(np.float32)
+                if self.lattice_rl:
+                    source_xy = self._snap_to_lattice(source_xy)
+                self._fixed_source_xy = source_xy
             target_min = self._fixed_target_min_xy.copy()
             source = self._fixed_source_xy.copy()
         else:
             target_min = self._sample_xy()
             source = self._sample_xy()
+            if self.lattice_rl:
+                source = self._snap_to_lattice(source)
 
         self.reference_min_xy_env[idx] = target_min
         if idx == 0:
@@ -608,20 +681,31 @@ class VectorizedSpatialEnv:
         dones = np.zeros(self.n_env, dtype=np.bool_)
         infos: list[dict] = [{} for _ in range(self.n_env)]
 
-        action_vectors = np.asarray(actions, dtype=np.float32)
-        if action_vectors.ndim == 1:
-            action_vectors = action_vectors.reshape(1, -1)
-        if action_vectors.shape != (self.n_env, self.action_dim):
-            raise ValueError(
-                f"Expected actions with shape ({self.n_env}, {self.action_dim}), "
-                f"got {action_vectors.shape}"
-            )
+        if self.lattice_rl:
+            # Discrete actions: 1-D array of integer action indices, shape (n_env,).
+            action_indices = np.asarray(actions, dtype=np.int64).reshape(-1)
+            if action_indices.shape[0] != self.n_env:
+                raise ValueError(
+                    f"Expected {self.n_env} discrete actions, got {action_indices.shape[0]}"
+                )
+        else:
+            action_vectors = np.asarray(actions, dtype=np.float32)
+            if action_vectors.ndim == 1:
+                action_vectors = action_vectors.reshape(1, -1)
+            if action_vectors.shape != (self.n_env, self.action_dim):
+                raise ValueError(
+                    f"Expected actions with shape ({self.n_env}, {self.action_dim}), "
+                    f"got {action_vectors.shape}"
+                )
 
         for env_index in range(self.n_env):
             z_old = self.current_xy[env_index]
             e_old_raw = self._objective_value(z_old, env_index=env_index)
 
-            action = action_vectors[env_index]
+            if self.lattice_rl:
+                action = action_indices[env_index]
+            else:
+                action = action_vectors[env_index]
             z_new = self._apply_action(z_old, action)
             self.current_xy[env_index] = z_new
             self.steps[env_index] += 1
@@ -635,8 +719,6 @@ class VectorizedSpatialEnv:
             if self.sensing == "S0":
                 progress = float(e_old_raw - e_new_raw)
                 reward = progress
-                if success:
-                    reward += 100.0
             else:
                 reward = 100.0 if success else self.s1_step_penalty
 

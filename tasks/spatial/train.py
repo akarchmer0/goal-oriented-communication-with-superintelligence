@@ -16,9 +16,12 @@ from .model import PolicyValueNet
 from .oracle import SPATIAL_ORACLE_MODES, SpatialOracle
 from .plotting import (
     plot_path_length_histograms,
+    plot_spatial_final_success_rate_summary,
     plot_spatial_optimization_curve_summary,
     plot_spatial_optimization_curves_by_method,
+    plot_spatial_success_rate_vs_step,
     plot_spatial_trajectory_with_gradients,
+    plot_spatial_training_success_rate,
 )
 from .ppo import PPOHyperParams, RolloutBuffer, compute_gae, ppo_update
 from .spatial_env import VectorizedSpatialEnv
@@ -879,6 +882,42 @@ def evaluate_spatial_optimization_curves(
         method_labels=SPATIAL_OPTIMIZATION_METHOD_LABELS,
     )
 
+    # Compute cumulative and instantaneous success rate curves from per-task data.
+    success_threshold = float(hidden_gradient_env.success_threshold)
+    method_cumulative_success: dict[str, np.ndarray] = {}
+    method_instantaneous_success: dict[str, np.ndarray] = {}
+    for method_key, curves in method_curves.items():
+        # curves: shape (num_tasks, horizon+1) of normalized objective values
+        arr = np.asarray(curves, dtype=np.float64)
+        # Instantaneous: fraction of tasks at or below threshold at each step
+        instantaneous = np.mean(arr <= success_threshold, axis=0)
+        # Cumulative: fraction of tasks that have EVER reached threshold by step t
+        cummin = np.minimum.accumulate(arr, axis=1)
+        cumulative = np.mean(cummin <= success_threshold, axis=0)
+        method_cumulative_success[method_key] = cumulative.astype(np.float32)
+        method_instantaneous_success[method_key] = instantaneous.astype(np.float32)
+
+    success_curve_plot_path = run_dir / "spatial_cumulative_success_rate_vs_step.png"
+    plot_spatial_success_rate_vs_step(
+        method_cumulative_success=method_cumulative_success,
+        output_path=success_curve_plot_path,
+        title=(
+            f"Cumulative success rate vs optimization step (seed={config.seed}, "
+            f"tasks={num_tasks})"
+        ),
+        method_labels=SPATIAL_OPTIMIZATION_METHOD_LABELS,
+    )
+    success_bar_plot_path = run_dir / "spatial_final_success_rate_summary.png"
+    plot_spatial_final_success_rate_summary(
+        method_cumulative_success=method_cumulative_success,
+        method_instantaneous_success=method_instantaneous_success,
+        output_path=success_bar_plot_path,
+        title=(
+            f"Final success rate summary (seed={config.seed}, tasks={num_tasks})"
+        ),
+        method_labels=SPATIAL_OPTIMIZATION_METHOD_LABELS,
+    )
+
     methods_payload: dict[str, dict[str, list[float]]] = {}
     for method_key in SPATIAL_OPTIMIZATION_METHOD_ORDER:
         if method_key not in method_curves:
@@ -887,6 +926,8 @@ def evaluate_spatial_optimization_curves(
             "label": SPATIAL_OPTIMIZATION_METHOD_LABELS.get(method_key, method_key),
             "mean_curve": [float(v) for v in method_means[method_key]],
             "std_curve": [float(v) for v in method_stds[method_key]],
+            "cumulative_success_curve": [float(v) for v in method_cumulative_success[method_key]],
+            "instantaneous_success_curve": [float(v) for v in method_instantaneous_success[method_key]],
             "task_curves": method_curves[method_key].astype(np.float64).tolist(),
         }
 
@@ -1511,13 +1552,16 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         ppo_step_scale=config.ppo_step_scale,
         success_threshold=spatial_success_threshold,
         basis_complexity=config.spatial_basis_complexity,
+        freq_sparsity=config.spatial_freq_sparsity,
         f_type=config.spatial_f_type,
         refresh_map_each_episode=config.spatial_refresh_map_each_episode,
         compute_episode_baselines=config.spatial_enable_baselines,
         fixed_start_target=config.spatial_fixed_start_target,
+        lattice_rl=config.lattice_rl,
+        lattice_granularity=config.lattice_granularity,
     )
     action_dim = env.action_dim
-    action_space_type = "continuous"
+    action_space_type = "discrete" if config.lattice_rl else "continuous"
 
     if config.spatial_enable_baselines and config.oracle_mode != "no_oracle":
         no_oracle_oracle = SpatialOracle(
@@ -1542,10 +1586,13 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
             ppo_step_scale=config.ppo_step_scale,
             success_threshold=spatial_success_threshold,
             basis_complexity=config.spatial_basis_complexity,
+            freq_sparsity=config.spatial_freq_sparsity,
             f_type=config.spatial_f_type,
             refresh_map_each_episode=config.spatial_refresh_map_each_episode,
             compute_episode_baselines=config.spatial_enable_baselines,
             fixed_start_target=config.spatial_fixed_start_target,
+            lattice_rl=config.lattice_rl,
+            lattice_granularity=config.lattice_granularity,
         )
         if config.oracle_mode == "convex_gradient":
             visible_gradient_oracle = SpatialOracle(
@@ -1570,10 +1617,13 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                 ppo_step_scale=config.ppo_step_scale,
                 success_threshold=spatial_success_threshold,
                 basis_complexity=config.spatial_basis_complexity,
+                freq_sparsity=config.spatial_freq_sparsity,
                 f_type=config.spatial_f_type,
                 refresh_map_each_episode=config.spatial_refresh_map_each_episode,
                 compute_episode_baselines=config.spatial_enable_baselines,
                 fixed_start_target=config.spatial_fixed_start_target,
+                lattice_rl=config.lattice_rl,
+                lattice_granularity=config.lattice_granularity,
             )
         if no_oracle_env is not None:
             _synchronize_spatial_envs(env, no_oracle_env)
@@ -2636,6 +2686,15 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                 f"mode={config.oracle_mode}"
             ),
         )
+        plot_spatial_training_success_rate(
+            metrics=curve_metrics,
+            output_path=run_dir / "spatial_training_success_rate.png",
+            title=(
+                f"Training success rate | D={config.spatial_hidden_dim}, "
+                f"visible={config.spatial_visible_dim}, "
+                f"mode={config.oracle_mode}, sensing={config.sensing}"
+            ),
+        )
 
     spatial_optimization_eval = evaluate_spatial_optimization_curves(
             config=config,
@@ -3054,6 +3113,16 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         default=defaults.spatial_basis_complexity,
     )
     parser.add_argument(
+        "--spatial_freq_sparsity",
+        type=int,
+        default=defaults.spatial_freq_sparsity,
+        help=(
+            "Max nonzero components per Fourier frequency vector (interaction order r). "
+            "0 = dense (all d components, original behavior). "
+            "1 = axis-aligned only. 2 = pairwise interactions. etc."
+        ),
+    )
+    parser.add_argument(
         "--F_type",
         dest="spatial_f_type",
         type=str,
@@ -3229,6 +3298,17 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         action="store_true",
         help="Skip automatic per-run matplotlib artifacts (path-length/trajectory PNGs).",
     )
+    parser.add_argument(
+        "--lattice_RL",
+        action="store_true",
+        help="Enable lattice-grid discrete PPO: the RL agent selects among moves to adjacent lattice nodes.",
+    )
+    parser.add_argument(
+        "--lattice_granularity",
+        type=int,
+        default=defaults.lattice_granularity,
+        help="Number of lattice nodes per dimension of feasible space (default: 20).",
+    )
 
     args = parser.parse_args()
     if int(args.oracle_proj_dim) < 0:
@@ -3255,6 +3335,7 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         spatial_success_curriculum_decay=args.spatial_success_curriculum_decay,
         spatial_success_curriculum_min=args.spatial_success_curriculum_min,
         spatial_basis_complexity=args.spatial_basis_complexity,
+        spatial_freq_sparsity=args.spatial_freq_sparsity,
         spatial_f_type=args.spatial_f_type,
         spatial_policy_arch=args.spatial_policy_arch,
         spatial_refresh_map_each_episode=args.spatial_refresh_map_each_episode,
@@ -3303,6 +3384,8 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         token_embed_dim=args.token_embed_dim,
         s1_step_penalty=args.s1_step_penalty,
         enable_training_plots=not args.disable_training_plots,
+        lattice_rl=args.lattice_RL,
+        lattice_granularity=args.lattice_granularity,
     )
     return config, seed_values
 
@@ -3337,6 +3420,8 @@ def main() -> None:
 
     if per_seed_spatial_curves:
         per_method_seed_curves: dict[str, list[np.ndarray]] = {}
+        per_method_seed_cumulative_success: dict[str, list[np.ndarray]] = {}
+        per_method_seed_instantaneous_success: dict[str, list[np.ndarray]] = {}
         method_labels: dict[str, str] = {}
         for _, curve_payload in per_seed_spatial_curves:
             payload_methods = curve_payload.get("methods", {})
@@ -3348,6 +3433,16 @@ def main() -> None:
                 if mean_curve.size < 2:
                     continue
                 per_method_seed_curves.setdefault(method_key, []).append(mean_curve)
+                cum_curve = stats.get("cumulative_success_curve")
+                if cum_curve is not None:
+                    arr = np.asarray(cum_curve, dtype=np.float64).reshape(-1)
+                    if arr.size >= 2:
+                        per_method_seed_cumulative_success.setdefault(method_key, []).append(arr)
+                inst_curve = stats.get("instantaneous_success_curve")
+                if inst_curve is not None:
+                    arr = np.asarray(inst_curve, dtype=np.float64).reshape(-1)
+                    if arr.size >= 2:
+                        per_method_seed_instantaneous_success.setdefault(method_key, []).append(arr)
 
         overall_method_mean: dict[str, np.ndarray] = {}
         overall_method_std: dict[str, np.ndarray] = {}
@@ -3400,6 +3495,53 @@ def main() -> None:
                 json.dump(overall_payload, handle, indent=2)
             aggregate["spatial_optimization_curves_over_seeds_plot"] = str(overall_plot_path)
             aggregate["spatial_optimization_curves_over_seeds_json"] = str(overall_json_path)
+
+        # Aggregate cumulative and instantaneous success rates across seeds
+        overall_cumulative_success: dict[str, np.ndarray] = {}
+        overall_instantaneous_success: dict[str, np.ndarray] = {}
+        for method_key, curves in per_method_seed_cumulative_success.items():
+            if not curves:
+                continue
+            min_len = min(c.shape[0] for c in curves)
+            if min_len < 2:
+                continue
+            trimmed = np.stack([c[:min_len] for c in curves], axis=0)
+            overall_cumulative_success[method_key] = np.nanmean(trimmed, axis=0).astype(np.float32)
+        for method_key, curves in per_method_seed_instantaneous_success.items():
+            if not curves:
+                continue
+            min_len = min(c.shape[0] for c in curves)
+            if min_len < 2:
+                continue
+            trimmed = np.stack([c[:min_len] for c in curves], axis=0)
+            overall_instantaneous_success[method_key] = np.nanmean(trimmed, axis=0).astype(np.float32)
+
+        if overall_cumulative_success:
+            success_plot_path = Path(config.logdir) / f"{summary_stem}_cumulative_success_rate_over_seeds.png"
+            plot_spatial_success_rate_vs_step(
+                method_cumulative_success=overall_cumulative_success,
+                output_path=success_plot_path,
+                title=(
+                    f"Cumulative success rate averaged over seeds "
+                    f"(num_seeds={len(per_seed_spatial_curves)})"
+                ),
+                method_labels=method_labels if method_labels else SPATIAL_OPTIMIZATION_METHOD_LABELS,
+            )
+            aggregate["cumulative_success_rate_over_seeds_plot"] = str(success_plot_path)
+
+        if overall_cumulative_success and overall_instantaneous_success:
+            success_bar_path = Path(config.logdir) / f"{summary_stem}_final_success_rate_over_seeds.png"
+            plot_spatial_final_success_rate_summary(
+                method_cumulative_success=overall_cumulative_success,
+                method_instantaneous_success=overall_instantaneous_success,
+                output_path=success_bar_path,
+                title=(
+                    f"Final success rates averaged over seeds "
+                    f"(num_seeds={len(per_seed_spatial_curves)})"
+                ),
+                method_labels=method_labels if method_labels else SPATIAL_OPTIMIZATION_METHOD_LABELS,
+            )
+            aggregate["final_success_rate_over_seeds_plot"] = str(success_bar_path)
 
     aggregate_path = Path(config.logdir) / f"{summary_stem}_summary.json"
     aggregate_path.parent.mkdir(parents=True, exist_ok=True)

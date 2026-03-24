@@ -1164,6 +1164,16 @@ def parse_args() -> argparse.Namespace:
         help="Comma-separated Fourier basis complexities K to sweep.",
     )
     parser.add_argument(
+        "--freq_sparsity",
+        type=int,
+        default=defaults.spatial_freq_sparsity,
+        help=(
+            "Max nonzero components per Fourier frequency vector (interaction order r). "
+            "0 = dense (all d components, original behavior). "
+            "1 = axis-aligned only. 2 = pairwise interactions. etc."
+        ),
+    )
+    parser.add_argument(
         "--hidden_dims",
         type=str,
         default="",
@@ -1382,6 +1392,7 @@ def main() -> None:
         spatial_success_threshold=float(args.spatial_success_threshold),
         spatial_enable_success_curriculum=not bool(args.disable_success_curriculum),
         spatial_basis_complexity=int(basis_complexities[0]),
+        spatial_freq_sparsity=int(args.freq_sparsity),
         spatial_f_type="FOURIER",
         spatial_policy_arch=defaults.spatial_policy_arch,
         spatial_refresh_map_each_episode=bool(args.spatial_refresh_map_each_episode),

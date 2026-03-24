@@ -14,10 +14,12 @@ from .run_optimizer_studies import (
     _aggregate_meta_results,
     _aggregate_search_results,
     _plot_meta_curves,
+    _plot_meta_curves_by_method_panels,
     _plot_meta_final_summary,
     _plot_search_budget_curve,
     _plot_search_wall_clock_curve,
     _plot_search_max_budget_summary,
+    _stack_meta_per_method_best_so_far_curves,
 )
 
 
@@ -83,6 +85,7 @@ def _regenerate_meta(
     meta_section: dict[str, Any],
     plots_root: Path,
     plot_data_root: Path,
+    x_axis_horizon: int | None = None,
 ) -> dict[str, Any]:
     plots_root.mkdir(parents=True, exist_ok=True)
     plot_data_root.mkdir(parents=True, exist_ok=True)
@@ -99,13 +102,27 @@ def _regenerate_meta(
     _write_json(aggregate_path, aggregate)
 
     curves_plot = plots_root / "meta_optimizer_objective_vs_step.png"
+    by_method_plot = plots_root / "meta_optimizer_objective_vs_step_by_method.png"
     final_plot = plots_root / "meta_optimizer_final_objective_summary.png"
-    _plot_meta_curves(aggregate=aggregate, output_path=curves_plot)
+    task_best = _stack_meta_per_method_best_so_far_curves(seed_payloads)
+    _plot_meta_curves(
+        aggregate=aggregate,
+        output_path=curves_plot,
+        x_axis_horizon=x_axis_horizon,
+    )
+    _plot_meta_curves_by_method_panels(
+        aggregate=aggregate,
+        per_method_task_curves=task_best,
+        output_path=by_method_plot,
+        x_axis_horizon=x_axis_horizon,
+    )
     _plot_meta_final_summary(aggregate=aggregate, output_path=final_plot)
 
     plots_payload: dict[str, str] = {}
     if curves_plot.exists():
         plots_payload["objective_vs_step_plot"] = str(curves_plot.resolve())
+    if by_method_plot.exists():
+        plots_payload["objective_vs_step_by_method_plot"] = str(by_method_plot.resolve())
     if final_plot.exists():
         plots_payload["final_objective_summary_plot"] = str(final_plot.resolve())
 
@@ -206,10 +223,13 @@ def plot_from_manifest(
 
     meta_section = manifest.get("meta_optimizer")
     if isinstance(meta_section, dict):
+        train_config = manifest.get("train_config", {})
+        max_horizon = train_config.get("max_horizon")
         meta_result = _regenerate_meta(
             meta_section=meta_section,
             plots_root=output_root / "meta_optimizer" / "plots",
             plot_data_root=output_root / "meta_optimizer" / "plot_data",
+            x_axis_horizon=int(max_horizon) if max_horizon is not None else None,
         )
 
     search_section = manifest.get("search_algorithm")

@@ -745,6 +745,7 @@ def _build_train_config(
         baseline_lr_tune_tasks=int(args.baseline_lr_tune_tasks),
         enable_optimization_curve_eval=False,
         enable_training_plots=False,
+        use_simple_s_star=bool(getattr(args, "simple_s_star", False)),
     )
 
 
@@ -939,6 +940,11 @@ def parse_args() -> argparse.Namespace:
         "--baseline_lr_tune_tasks",
         type=int,
         default=defaults.baseline_lr_tune_tasks,
+    )
+    parser.add_argument(
+        "--simple_s_star",
+        action="store_true",
+        help="Use norm-ball oracle s*=-R*c/||c|| instead of SDP relaxation.",
     )
 
     # Evaluation config

@@ -40,6 +40,9 @@ META_METHOD_ORDER = (
     "rl_hidden_gradient",
 )
 
+# Subplot figure `meta_optimizer_objective_vs_step_by_method.png` (excludes GD).
+META_METHOD_ORDER_BY_METHOD_PANEL = tuple(m for m in META_METHOD_ORDER if m != "gd")
+
 SEARCH_METHOD_ORDER = (
     "random_search",
     "rl_no_oracle",
@@ -107,9 +110,14 @@ def _method_colors(method_order: tuple[str, ...]) -> dict[str, tuple[float, floa
     return {method: palette[idx] for idx, method in enumerate(method_order)}
 
 
-def _make_axes(figsize: tuple[float, float] = (8.6, 5.0)) -> tuple[plt.Figure, plt.Axes]:
-    fig, ax = plt.subplots(figsize=figsize)
-    fig.patch.set_facecolor("white")
+def _method_colors_by_method_panel() -> dict[str, tuple[float, float, float, float]]:
+    """Plasma keyed like full META_METHOD_ORDER but omitting GD's first (darkest) swatch."""
+    base = plt.cm.plasma(np.linspace(0.12, 0.88, max(1, len(META_METHOD_ORDER))))
+    sub = base[1 : 1 + len(META_METHOD_ORDER_BY_METHOD_PANEL)]
+    return {m: sub[i] for i, m in enumerate(META_METHOD_ORDER_BY_METHOD_PANEL)}
+
+
+def _style_meta_axis(ax: plt.Axes) -> None:
     ax.set_facecolor("white")
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
@@ -119,6 +127,12 @@ def _make_axes(figsize: tuple[float, float] = (8.6, 5.0)) -> tuple[plt.Figure, p
     ax.grid(True, which="major", alpha=0.28, linewidth=0.8)
     ax.grid(True, which="minor", alpha=0.12, linewidth=0.5)
     ax.minorticks_on()
+
+
+def _make_axes(figsize: tuple[float, float] = (8.6, 5.0)) -> tuple[plt.Figure, plt.Axes]:
+    fig, ax = plt.subplots(figsize=figsize)
+    fig.patch.set_facecolor("white")
+    _style_meta_axis(ax)
     return fig, ax
 
 
@@ -589,8 +603,9 @@ def _evaluate_meta_optimizer_seed(
         if not curves_list:
             continue
         curves = np.stack(curves_list, axis=0).astype(np.float64)
-        mean_curve = np.nanmean(curves, axis=0)
-        std_curve = np.nanstd(curves, axis=0)
+        best_so_far = np.minimum.accumulate(curves, axis=1)
+        mean_curve = np.nanmean(best_so_far, axis=0)
+        std_curve = np.nanstd(best_so_far, axis=0)
         final_values = curves[:, -1]
         best_values = np.nanmin(curves, axis=1)
         methods_payload[method] = {
@@ -1129,8 +1144,13 @@ def _aggregate_meta_results(seed_payloads: list[dict[str, Any]]) -> dict[str, An
         if not by_method_curves[method]:
             continue
         stacked = np.concatenate(by_method_curves[method], axis=0)
-        mean_curve = np.mean(stacked, axis=0)
-        std_curve = np.std(stacked, axis=0)
+        # Per-step plot: mean best-so-far along each task's trajectory. Raw
+        # GD/Adam/basin/PPO rollouts are non-monotone; averaging instantaneous
+        # values across tasks hides progress (out-of-phase oscillation). Random
+        # search is already non-increasing, so accumulate is a no-op there.
+        best_so_far = np.minimum.accumulate(stacked, axis=1)
+        mean_curve = np.mean(best_so_far, axis=0)
+        std_curve = np.std(best_so_far, axis=0)
         methods_payload[method] = {
             "label": METHOD_LABELS.get(method, method),
             "num_total_tasks": int(stacked.shape[0]),
@@ -1153,6 +1173,28 @@ def _aggregate_meta_results(seed_payloads: list[dict[str, Any]]) -> dict[str, An
         "num_seed_payloads": int(len(seed_payloads)),
         "methods": methods_payload,
     }
+
+
+def _stack_meta_per_method_best_so_far_curves(
+    seed_payloads: list[dict[str, Any]],
+) -> dict[str, np.ndarray]:
+    """Concatenate per-seed task curves and apply per-task best-so-far (plotting metric)."""
+    by_method: dict[str, list[np.ndarray]] = {m: [] for m in META_METHOD_ORDER}
+    for payload in seed_payloads:
+        for method in META_METHOD_ORDER:
+            method_data = payload.get("methods", {}).get(method)
+            if method_data is None:
+                continue
+            task_curves = np.asarray(method_data.get("task_curves", []), dtype=np.float64)
+            if task_curves.ndim == 2 and task_curves.shape[0] > 0 and task_curves.shape[1] >= 2:
+                by_method[method].append(task_curves)
+    out: dict[str, np.ndarray] = {}
+    for method in META_METHOD_ORDER:
+        if not by_method[method]:
+            continue
+        stacked = np.concatenate(by_method[method], axis=0)
+        out[method] = np.minimum.accumulate(stacked, axis=1)
+    return out
 
 
 def _aggregate_search_results(seed_payloads: list[dict[str, Any]]) -> dict[str, Any]:
@@ -1247,10 +1289,16 @@ def _aggregate_search_results(seed_payloads: list[dict[str, Any]]) -> dict[str, 
     }
 
 
-def _plot_meta_curves(*, aggregate: dict[str, Any], output_path: Path) -> None:
+def _plot_meta_curves(
+    *,
+    aggregate: dict[str, Any],
+    output_path: Path,
+    x_axis_horizon: int | None = None,
+) -> None:
     methods = aggregate.get("methods", {})
-    horizon = int(aggregate.get("horizon") or 0)
-    if not methods or horizon < 1:
+    aggregate_horizon = int(aggregate.get("horizon") or 0)
+    plot_horizon = int(x_axis_horizon) if x_axis_horizon is not None else aggregate_horizon
+    if not methods or plot_horizon < 1:
         return
     colors = _method_colors(META_METHOD_ORDER)
     fig, ax = _make_axes(figsize=(8.8, 5.2))
@@ -1266,7 +1314,6 @@ def _plot_meta_curves(*, aggregate: dict[str, Any], output_path: Path) -> None:
         steps = np.arange(mean_curve.size, dtype=np.int64)
         color = colors[method]
         label = METHOD_LABELS.get(method, method)
-        ax.plot(steps, mean_curve, color=color, linewidth=2.0, label=label)
         if std_curve.size == mean_curve.size:
             ax.fill_between(
                 steps,
@@ -1275,20 +1322,29 @@ def _plot_meta_curves(*, aggregate: dict[str, Any], output_path: Path) -> None:
                 color=color,
                 alpha=0.16,
                 linewidth=0,
+                zorder=2,
             )
+        ax.plot(
+            steps,
+            mean_curve,
+            color=color,
+            linewidth=2.0,
+            label=label,
+            zorder=3,
+        )
         finite = mean_curve[np.isfinite(mean_curve)]
         if finite.size > 0:
             finite_chunks.append(finite)
 
     ax.set_title(
-        "Meta-optimizer study | normalized objective vs optimization steps",
+        "Meta-optimizer study | mean best-so-far normalized objective vs steps",
         loc="left",
         fontsize=11,
         pad=10,
     )
     ax.set_xlabel("Optimization step")
-    ax.set_ylabel("Normalized objective E(F(z))")
-    ax.set_xlim(0.0, float(max(1, horizon)))
+    ax.set_ylabel("Best-so-far E(F(z)), mean across tasks")
+    ax.set_xlim(0.0, float(max(1, plot_horizon)))
     if finite_chunks:
         finite_values = np.concatenate(finite_chunks)
         y_min = float(np.min(finite_values))
@@ -1301,6 +1357,119 @@ def _plot_meta_curves(*, aggregate: dict[str, Any], output_path: Path) -> None:
     ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
     ax.legend(loc="upper right", frameon=False)
     fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=190)
+    plt.close(fig)
+
+
+def _plot_meta_curves_by_method_panels(
+    *,
+    aggregate: dict[str, Any],
+    per_method_task_curves: dict[str, np.ndarray],
+    output_path: Path,
+    x_axis_horizon: int | None = None,
+) -> None:
+    methods = aggregate.get("methods", {})
+    aggregate_horizon = int(aggregate.get("horizon") or 0)
+    plot_horizon = int(x_axis_horizon) if x_axis_horizon is not None else aggregate_horizon
+    if not methods or plot_horizon < 1:
+        return
+    colors = _method_colors_by_method_panel()
+    series: list[tuple[str, np.ndarray, np.ndarray, str]] = []
+    for method in META_METHOD_ORDER_BY_METHOD_PANEL:
+        data = methods.get(method)
+        if data is None:
+            continue
+        mean_curve = np.asarray(data.get("mean_curve", []), dtype=np.float64)
+        std_curve = np.asarray(data.get("std_curve", []), dtype=np.float64)
+        if mean_curve.size < 2:
+            continue
+        label = METHOD_LABELS.get(method, method)
+        series.append((method, mean_curve, std_curve, label))
+    if not series:
+        return
+
+    n = len(series)
+    nrows = 3
+    ncols = 2
+    fig_w = 9.2
+    fig_h = 3.15 * float(nrows)
+    fig, axes = plt.subplots(
+        nrows,
+        ncols,
+        figsize=(fig_w, fig_h),
+        squeeze=False,
+        sharex=True,
+    )
+    fig.patch.set_facecolor("white")
+    mean_line_color = "#24292f"
+
+    for idx, (method, mean_curve, std_curve, label) in enumerate(series):
+        ax = axes[idx // ncols][idx % ncols]
+        _style_meta_axis(ax)
+        steps = np.arange(mean_curve.size, dtype=np.int64)
+        color = colors[method]
+        task_block = per_method_task_curves.get(method)
+        finite_here: list[np.ndarray] = []
+        if task_block is not None and task_block.ndim == 2 and task_block.shape[1] == mean_curve.size:
+            ax.plot(
+                steps,
+                task_block.T,
+                color=color,
+                alpha=0.07,
+                linewidth=0.55,
+                solid_capstyle="round",
+                zorder=1,
+            )
+            finite_here.append(task_block[np.isfinite(task_block)])
+        if std_curve.size == mean_curve.size:
+            ax.fill_between(
+                steps,
+                mean_curve - std_curve,
+                mean_curve + std_curve,
+                color=mean_line_color,
+                alpha=0.14,
+                linewidth=0,
+                zorder=2,
+            )
+        ax.plot(
+            steps,
+            mean_curve,
+            color=mean_line_color,
+            linewidth=2.0,
+            zorder=3,
+        )
+        finite_here.append(mean_curve[np.isfinite(mean_curve)])
+        vals = np.concatenate(finite_here) if finite_here else np.asarray([], dtype=np.float64)
+        if vals.size > 0:
+            y_min = float(np.min(vals))
+            y_max = float(np.max(vals))
+            margin = 0.08 * max(1e-6, y_max - y_min)
+            ax.set_ylim(max(0.0, y_min - margin), min(1.02, y_max + margin))
+        else:
+            ax.set_ylim(0.0, 1.02)
+        ax.set_xlim(0.0, float(max(1, plot_horizon)))
+        ax.set_title(label, loc="left", fontsize=10, pad=6)
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.yaxis.set_major_locator(MaxNLocator(nbins=5))
+        row = idx // ncols
+        col = idx % ncols
+        if row == nrows - 1:
+            ax.set_xlabel("Optimization step")
+        if col == 0:
+            ax.set_ylabel("Best-so-far E(F(z))")
+
+    for j in range(n, nrows * ncols):
+        axes[j // ncols][j % ncols].set_visible(False)
+
+    fig.suptitle(
+        "Meta-optimizer study | per-method mean ± std (faint = individual tasks)",
+        x=0.02,
+        y=0.995,
+        ha="left",
+        fontsize=11,
+    )
+    fig.tight_layout(rect=(0, 0, 1, 0.96))
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=190)
     plt.close(fig)
@@ -1628,6 +1797,7 @@ def _build_train_config(
         spatial_success_threshold=float(args.spatial_success_threshold),
         spatial_enable_success_curriculum=bool(enable_success_curriculum),
         spatial_basis_complexity=int(args.spatial_basis_complexity),
+        spatial_freq_sparsity=int(args.spatial_freq_sparsity),
         spatial_f_type=str(args.spatial_f_type),
         spatial_policy_arch=str(args.spatial_policy_arch),
         spatial_refresh_map_each_episode=False,
@@ -1640,6 +1810,8 @@ def _build_train_config(
         spatial_baseline_lr_tune_tasks=int(args.spatial_baseline_lr_tune_tasks),
         spatial_enable_optimization_curve_eval=False,
         enable_training_plots=False,
+        lattice_rl=bool(args.lattice_RL),
+        lattice_granularity=int(args.lattice_granularity),
     )
 
 
@@ -1740,9 +1912,10 @@ def _run_meta_optimizer_study(
     seed_payloads: list[dict[str, Any]] = []
     run_entries: list[dict[str, Any]] = []
 
+    lattice_suffix = "_lattice" if bool(args.lattice_RL) else ""
     for seed in seeds:
         run_name = (
-            f"{args.run_name_prefix}_meta_P{int(args.oracle_proj_dim)}_seed{int(seed)}"
+            f"{args.run_name_prefix}_meta_P{int(args.oracle_proj_dim)}_visible{int(args.spatial_visible_dim)}{lattice_suffix}_seed{int(seed)}"
         )
         config = _build_train_config(
             args=args,
@@ -1852,11 +2025,25 @@ def _run_meta_optimizer_study(
     plot_paths: dict[str, str] = {}
     if not bool(args.skip_plotting):
         curves_plot = plots_root / "meta_optimizer_objective_vs_step.png"
+        by_method_plot = plots_root / "meta_optimizer_objective_vs_step_by_method.png"
         final_plot = plots_root / "meta_optimizer_final_objective_summary.png"
-        _plot_meta_curves(aggregate=aggregate, output_path=curves_plot)
+        task_best = _stack_meta_per_method_best_so_far_curves(seed_payloads)
+        _plot_meta_curves(
+            aggregate=aggregate,
+            output_path=curves_plot,
+            x_axis_horizon=int(args.max_horizon),
+        )
+        _plot_meta_curves_by_method_panels(
+            aggregate=aggregate,
+            per_method_task_curves=task_best,
+            output_path=by_method_plot,
+            x_axis_horizon=int(args.max_horizon),
+        )
         _plot_meta_final_summary(aggregate=aggregate, output_path=final_plot)
         if curves_plot.exists():
             plot_paths["objective_vs_step_plot"] = str(curves_plot.resolve())
+        if by_method_plot.exists():
+            plot_paths["objective_vs_step_by_method_plot"] = str(by_method_plot.resolve())
         if final_plot.exists():
             plot_paths["final_objective_summary_plot"] = str(final_plot.resolve())
 
@@ -1868,6 +2055,7 @@ def _run_meta_optimizer_study(
         "method_order": list(META_METHOD_ORDER),
         "method_labels": dict(METHOD_LABELS),
         "seeds": [int(seed) for seed in seeds],
+        "max_horizon": int(args.max_horizon),
         "meta_num_tasks": int(args.meta_num_tasks),
         "meta_eval_horizon": int(args.meta_eval_horizon),
         "meta_basin_hop_local_steps": int(args.meta_basin_hop_local_steps),
@@ -1903,9 +2091,10 @@ def _run_search_algorithm_study(
     seed_payloads: list[dict[str, Any]] = []
     run_entries: list[dict[str, Any]] = []
 
+    lattice_suffix = "_lattice" if bool(args.lattice_RL) else ""
     for seed in seeds:
         run_name = (
-            f"{args.run_name_prefix}_search_P{int(args.oracle_proj_dim)}_seed{int(seed)}"
+            f"{args.run_name_prefix}_search_P{int(args.oracle_proj_dim)}_visible{int(args.spatial_visible_dim)}{lattice_suffix}_seed{int(seed)}"
         )
         config = _build_train_config(
             args=args,
@@ -2038,7 +2227,7 @@ def parse_args() -> argparse.Namespace:
         "--study",
         type=str,
         choices=["meta_optimizer", "search_algorithm", "all"],
-        default="all",
+        default="meta_optimizer",
     )
     parser.add_argument(
         "--seeds",
@@ -2072,7 +2261,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--lr", type=float, default=defaults.lr)
     parser.add_argument("--ppo_epochs", type=int, default=defaults.ppo_epochs)
     parser.add_argument("--minibatches", type=int, default=defaults.minibatches)
-    parser.add_argument("--policy_hidden_dim", type=int, default=64)
+    parser.add_argument("--policy_hidden_dim", type=int, default=128)
     parser.add_argument(
         "--oracle_proj_dim",
         type=int,
@@ -2108,6 +2297,16 @@ def parse_args() -> argparse.Namespace:
         default=defaults.spatial_basis_complexity,
     )
     parser.add_argument(
+        "--spatial_freq_sparsity",
+        type=int,
+        default=defaults.spatial_freq_sparsity,
+        help=(
+            "Max nonzero components per Fourier frequency vector (interaction order r). "
+            "0 = dense (all d components, original behavior). "
+            "1 = axis-aligned only. 2 = pairwise interactions. etc."
+        ),
+    )
+    parser.add_argument(
         "--spatial_f_type",
         type=str,
         choices=["FOURIER", "MLP"],
@@ -2136,7 +2335,15 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument("--meta_num_tasks", type=int, default=500)
-    parser.add_argument("--meta_eval_horizon", type=int, default=defaults.max_horizon)
+    parser.add_argument(
+        "--meta_eval_horizon",
+        type=int,
+        default=None,
+        help=(
+            "Evaluation horizon for meta-optimizer curves. "
+            "If omitted, defaults to --max_horizon."
+        ),
+    )
     parser.add_argument(
         "--meta_basin_hop_tune_tasks",
         type=int,
@@ -2201,7 +2408,15 @@ def parse_args() -> argparse.Namespace:
             "If omitted, a dense log-spaced curve is generated automatically."
         ),
     )
-    parser.add_argument("--search_eval_horizon", type=int, default=defaults.max_horizon)
+    parser.add_argument(
+        "--search_eval_horizon",
+        type=int,
+        default=None,
+        help=(
+            "Per-episode horizon for search-algorithm evaluation. "
+            "If omitted, defaults to --max_horizon."
+        ),
+    )
     parser.add_argument("--search_max_episodes_per_method", type=int, default=5000)
     parser.add_argument(
         "--search_curve_points",
@@ -2219,11 +2434,26 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Disable success-threshold curriculum for fixed-task search training runs.",
     )
+    parser.add_argument(
+        "--lattice_RL",
+        action="store_true",
+        help="Enable lattice-grid discrete PPO: the RL agent selects among moves to adjacent lattice nodes.",
+    )
+    parser.add_argument(
+        "--lattice_granularity",
+        type=int,
+        default=defaults.lattice_granularity,
+        help="Number of lattice nodes per dimension of feasible space (default: 20).",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    if args.meta_eval_horizon is None:
+        args.meta_eval_horizon = int(args.max_horizon)
+    if args.search_eval_horizon is None:
+        args.search_eval_horizon = int(args.max_horizon)
     if int(args.meta_basin_hop_tune_tasks) < 1:
         raise ValueError("meta_basin_hop_tune_tasks must be >= 1")
     if int(args.oracle_proj_dim) < 0:
@@ -2258,7 +2488,11 @@ def main() -> None:
             num_points=int(args.search_curve_points),
         )
 
-    suite_root = Path(args.suite_output_dir).expanduser().resolve()
+    base_suite = Path(args.suite_output_dir).expanduser().resolve()
+    suite_suffix = f"_vis{int(args.spatial_visible_dim)}"
+    if bool(args.lattice_RL):
+        suite_suffix += "_lattice"
+    suite_root = base_suite.parent / f"{base_suite.name}{suite_suffix}"
     suite_root.mkdir(parents=True, exist_ok=True)
     control_budget_scale = float(np.sqrt(float(max(2, int(args.spatial_visible_dim))) / 2.0))
 

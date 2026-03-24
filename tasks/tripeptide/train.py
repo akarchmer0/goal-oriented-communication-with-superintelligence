@@ -14,6 +14,7 @@ from tqdm import tqdm
 from .config import TrainConfig
 from .energy import load_energy_surface
 from .env import VectorizedTripeptideEnv
+from .learned_lift import LearnedLiftOracle
 from .lifting_map import LiftingMap
 from .model import PolicyValueNet
 from .oracle import ORACLE_MODES, SpatialOracle
@@ -891,7 +892,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
     with (run_dir / "config.json").open("w", encoding="utf-8") as handle:
         json.dump(asdict(config), handle, indent=2)
 
-    # Load energy surface and solve SDP
+    # Load energy surface and compute oracle target s*
     energy_surface = load_energy_surface(
         config.energy_json,
         use_synthetic=config.use_synthetic_fallback,
@@ -900,13 +901,54 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         n_minima=config.synthetic_n_minima,
         seed=config.seed,
     )
-    lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
-    s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
-        lifting_map, energy_surface, K_relax=config.K_relax
-    )
-    validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
 
-    hidden_dim = lifting_map.D
+    learned_lift_oracle: LearnedLiftOracle | None = None
+
+    if config.learned_lift:
+        # --- Learned lifting map: encoder F + ICNN decoder G -----------------
+        D = config.learned_lift_D
+        enc_hidden = [int(x) for x in config.learned_lift_encoder_hidden.split(",") if x.strip()]
+        dec_hidden = [int(x) for x in config.learned_lift_decoder_hidden.split(",") if x.strip()]
+        print(f"  Training learned lift: D={D}, encoder={enc_hidden}, decoder={dec_hidden}")
+        learned_lift_oracle = LearnedLiftOracle.train_from_energy_surface(
+            energy_surface=energy_surface,
+            d=energy_surface.d,
+            D=D,
+            encoder_hidden_dims=tuple(enc_hidden),
+            decoder_hidden_dims=tuple(dec_hidden),
+            n_train=config.learned_lift_n_train,
+            n_epochs=config.learned_lift_n_epochs,
+            lr=config.learned_lift_lr,
+            seed=config.seed + 7,
+        )
+        # Use a dummy Fourier lifting map for baseline gradient computations;
+        # the RL agent uses the learned oracle instead.
+        lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
+        hidden_dim = D
+        s_star_sdp = learned_lift_oracle.s_star
+        sdp_bound = float("nan")
+        sdp_status = "learned_lift"
+    else:
+        lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
+        if config.use_simple_s_star:
+            # Norm-ball oracle: s* = -R * c / ||c||
+            # R = sqrt(N_freq) since ||F(z)||^2 = N_freq for any z on the torus
+            c_vec = lifting_map.energy_as_linear(energy_surface)
+            c_norm = float(np.linalg.norm(c_vec))
+            R = float(np.sqrt(lifting_map.N_freq))
+            s_star_sdp = (-R * c_vec / max(c_norm, 1e-12)).astype(np.float32)
+            sdp_bound = float(np.dot(c_vec, s_star_sdp.astype(np.float64)) + energy_surface.c0)
+            sdp_status = "simple_norm_ball"
+            print(f"  Using simple norm-ball oracle: R={R:.2f}, ||c||={c_norm:.4f}")
+            print(f"  Norm-ball energy bound: {sdp_bound:.4f}")
+            validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+        else:
+            s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
+                lifting_map, energy_surface, K_relax=config.K_relax
+            )
+            validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+        hidden_dim = lifting_map.D
+
     token_dim = config.spatial_token_dim
 
     oracle = SpatialOracle(
@@ -931,9 +973,12 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         ppo_step_scale=config.ppo_step_scale,
         success_threshold=config.success_threshold,
         compute_episode_baselines=config.enable_baselines,
+        lattice_rl=config.lattice_rl,
+        lattice_granularity=config.lattice_granularity,
+        learned_lift_oracle=learned_lift_oracle,
     )
     action_dim = env.action_dim
-    action_space_type = "continuous"
+    action_space_type = "discrete" if config.lattice_rl else "continuous"
 
     no_oracle_env: VectorizedTripeptideEnv | None = None
     no_oracle_model: PolicyValueNet | None = None
@@ -962,6 +1007,8 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
             reward_noise_std=config.reward_noise_std, step_size=config.step_size,
             ppo_step_scale=config.ppo_step_scale, success_threshold=config.success_threshold,
             compute_episode_baselines=config.enable_baselines,
+            lattice_rl=config.lattice_rl, lattice_granularity=config.lattice_granularity,
+            learned_lift_oracle=learned_lift_oracle,
         )
         if config.oracle_mode == "convex_gradient":
             visible_gradient_oracle = SpatialOracle(
@@ -976,6 +1023,8 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                 reward_noise_std=config.reward_noise_std, step_size=config.step_size,
                 ppo_step_scale=config.ppo_step_scale, success_threshold=config.success_threshold,
                 compute_episode_baselines=config.enable_baselines,
+                lattice_rl=config.lattice_rl, lattice_granularity=config.lattice_granularity,
+                learned_lift_oracle=learned_lift_oracle,
             )
         if no_oracle_env is not None:
             _synchronize_envs(env, no_oracle_env)
@@ -1533,6 +1582,35 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
     parser.add_argument("--oracle_proj_dim", type=int, default=defaults.oracle_proj_dim)
     parser.add_argument("--s1_step_penalty", type=float, default=defaults.s1_step_penalty)
     parser.add_argument("--disable_training_plots", action="store_true")
+    parser.add_argument("--simple_s_star", action="store_true",
+                        help="Use norm-ball oracle s*=-R*c/||c|| instead of SDP relaxation.")
+    parser.add_argument(
+        "--lattice_RL",
+        action="store_true",
+        help="Enable lattice-grid discrete PPO: the RL agent selects among moves to adjacent lattice nodes.",
+    )
+    parser.add_argument(
+        "--lattice_granularity",
+        type=int,
+        default=defaults.lattice_granularity,
+        help="Number of lattice nodes per dimension of feasible space (default: 20).",
+    )
+    parser.add_argument(
+        "--learned_lift",
+        action="store_true",
+        help="Use a learned encoder (MLP) + decoder (ICNN) instead of Fourier lifting map + SDP.",
+    )
+    parser.add_argument("--learned_lift_D", type=int, default=defaults.learned_lift_D,
+                        help="Hidden dimension D for the learned lifting map.")
+    parser.add_argument("--learned_lift_encoder_hidden", type=str,
+                        default=defaults.learned_lift_encoder_hidden,
+                        help="Comma-separated encoder hidden layer sizes.")
+    parser.add_argument("--learned_lift_decoder_hidden", type=str,
+                        default=defaults.learned_lift_decoder_hidden,
+                        help="Comma-separated ICNN decoder hidden layer sizes.")
+    parser.add_argument("--learned_lift_n_train", type=int, default=defaults.learned_lift_n_train)
+    parser.add_argument("--learned_lift_n_epochs", type=int, default=defaults.learned_lift_n_epochs)
+    parser.add_argument("--learned_lift_lr", type=float, default=defaults.learned_lift_lr)
 
     args = parser.parse_args()
     seed_values = _parse_seed_values(args.seed)
@@ -1584,6 +1662,16 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         oracle_proj_dim=args.oracle_proj_dim,
         s1_step_penalty=args.s1_step_penalty,
         enable_training_plots=not args.disable_training_plots,
+        use_simple_s_star=args.simple_s_star,
+        lattice_rl=args.lattice_RL,
+        lattice_granularity=args.lattice_granularity,
+        learned_lift=args.learned_lift,
+        learned_lift_D=args.learned_lift_D,
+        learned_lift_encoder_hidden=args.learned_lift_encoder_hidden,
+        learned_lift_decoder_hidden=args.learned_lift_decoder_hidden,
+        learned_lift_n_train=args.learned_lift_n_train,
+        learned_lift_n_epochs=args.learned_lift_n_epochs,
+        learned_lift_lr=args.learned_lift_lr,
     )
     return config, seed_values
 

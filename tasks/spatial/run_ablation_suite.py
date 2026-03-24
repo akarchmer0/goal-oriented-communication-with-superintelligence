@@ -106,9 +106,12 @@ def _build_eval_env(config: TrainConfig) -> VectorizedSpatialEnv:
         step_size=config.spatial_step_size,
         success_threshold=config.spatial_success_threshold,
         basis_complexity=config.spatial_basis_complexity,
+        freq_sparsity=config.spatial_freq_sparsity,
         f_type=config.spatial_f_type,
         refresh_map_each_episode=config.spatial_refresh_map_each_episode,
         compute_episode_baselines=False,
+        lattice_rl=config.lattice_rl,
+        lattice_granularity=config.lattice_granularity,
     )
 
 
@@ -329,6 +332,16 @@ def parse_args() -> argparse.Namespace:
         default=defaults.spatial_basis_complexity,
     )
     parser.add_argument(
+        "--spatial_freq_sparsity",
+        type=int,
+        default=defaults.spatial_freq_sparsity,
+        help=(
+            "Max nonzero components per Fourier frequency vector (interaction order r). "
+            "0 = dense (all d components, original behavior). "
+            "1 = axis-aligned only. 2 = pairwise interactions. etc."
+        ),
+    )
+    parser.add_argument(
         "--spatial_f_type",
         type=str,
         choices=["FOURIER", "MLP"],
@@ -467,6 +480,7 @@ def main() -> None:
         spatial_step_size=float(args.spatial_step_size),
         spatial_success_threshold=float(args.spatial_success_threshold),
         spatial_basis_complexity=int(args.spatial_basis_complexity),
+        spatial_freq_sparsity=int(args.spatial_freq_sparsity),
         spatial_f_type=str(args.spatial_f_type),
         spatial_policy_arch=str(args.spatial_policy_arch),
         spatial_refresh_map_each_episode=bool(args.spatial_refresh_map_each_episode),

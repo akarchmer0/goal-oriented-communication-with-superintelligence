@@ -1,10 +1,13 @@
 """SDP relaxation for computing the oracle target s*_SDP.
 
 Solves: min c_energy^T s  subject to M(s) >= 0 (PSD)
-where M(s) is the trigonometric moment matrix parametrized by s.
+where M(s) is the trigonometric moment matrix parametrised by s.
 
 The solution s*_SDP approximates F(z*) where z* is the true global minimum,
 WITHOUT requiring knowledge of z*.
+
+Uses sparse basis matrices for memory-efficient construction of the moment
+matrix constraint.
 """
 
 from __future__ import annotations
@@ -12,6 +15,7 @@ from __future__ import annotations
 from collections import defaultdict
 
 import numpy as np
+import scipy.sparse as sp
 
 from .lifting_map import LiftingMap, enumerate_frequency_indices
 
@@ -58,7 +62,6 @@ def solve_sdp_oracle(
     print(f"  Moment matrix size: {N_I} x {N_I}")
 
     I_tuples = [tuple(int(x) for x in row) for row in I_indices]
-    I_to_idx = {m: i for i, m in enumerate(I_tuples)}
 
     # Group matrix entries by their difference n = I[i] - I[j]
     diff_groups: dict[tuple[int, ...], list[tuple[int, int]]] = defaultdict(list)
@@ -82,39 +85,27 @@ def solve_sdp_oracle(
     alpha = cp.Variable(N_pos, name="alpha")  # Re(c_n)
     beta = cp.Variable(N_pos, name="beta")    # Im(c_n)
 
-    # Build moment matrix as sum of basis matrices weighted by variables
-    # M = M_0 + sum_k alpha_k * A_k + sum_k beta_k * B_k
-    # where A_k, B_k are complex basis matrices
+    # Build moment matrix using sparse basis matrices.
+    #
+    # M_real = M_0_real + sum_k alpha[k] * A_real[k]
+    # M_imag = M_0_imag + sum_k beta[k] * B_imag[k]
+    # (A_imag and B_real are identically zero by construction.)
+    #
+    # We flatten each N_I x N_I matrix to a vector of length NN = N_I^2,
+    # then store the per-variable contributions as sparse matrices
+    # A_real_sp (NN x N_pos) and B_imag_sp (NN x N_pos).
 
-    # For efficiency, build the real and imaginary parts separately
-    # M_real = Re(M) is symmetric, M_imag = Im(M) is antisymmetric
-    # M = M_real + i * M_imag
-    # M >> 0 iff [M_real, -M_imag; M_imag, M_real] >> 0
-
-    # Build coefficient arrays for each variable
-    # M_0_real[i,j] = Re(c_n) where n = I[i]-I[j] and n=0 => 1
-    # For n=0: c_0 = 1, so M_0[i,j] = 1 for all (i,j) in diff_groups[0]
+    NN = N_I * N_I
     M_0_real = np.zeros((N_I, N_I), dtype=np.float64)
     M_0_imag = np.zeros((N_I, N_I), dtype=np.float64)
 
-    # For each positive diff k:
-    # A_k_real[i,j] = 1 if n=pos_k, or 1 if n=neg(pos_k), else 0
-    # A_k_imag[i,j] = 0 if n=pos_k... need to be careful
-    #
-    # c_n = alpha + i*beta (for positive n)
-    # c_{-n} = alpha - i*beta
-    # So for entry (i,j) with diff n = positive: contributes alpha*1 + beta*i
-    #    Re part: alpha * 1 + beta * 0 = alpha
-    #    Im part: alpha * 0 + beta * 1 = beta
-    # For entry (i,j) with diff n = negative of positive:
-    #    c_{-n} = alpha - i*beta
-    #    Re part: alpha
-    #    Im part: -beta
-
-    A_real = np.zeros((N_pos, N_I, N_I), dtype=np.float64)
-    A_imag = np.zeros((N_pos, N_I, N_I), dtype=np.float64)
-    B_real = np.zeros((N_pos, N_I, N_I), dtype=np.float64)
-    B_imag = np.zeros((N_pos, N_I, N_I), dtype=np.float64)
+    # Collect sparse entries: (flat_index, variable_index, value)
+    a_rows: list[int] = []
+    a_cols: list[int] = []
+    a_vals: list[float] = []
+    b_rows: list[int] = []
+    b_cols: list[int] = []
+    b_vals: list[float] = []
 
     for n, pairs in diff_groups.items():
         if n == zero_tuple:
@@ -125,32 +116,46 @@ def solve_sdp_oracle(
         if _canonical_positive(n):
             k = pos_to_idx[n]
             for i, j in pairs:
-                A_real[k, i, j] = 1.0  # alpha contributes to Re
-                B_imag[k, i, j] = 1.0  # beta contributes to Im
+                flat = i * N_I + j
+                a_rows.append(flat)
+                a_cols.append(k)
+                a_vals.append(1.0)
+                b_rows.append(flat)
+                b_cols.append(k)
+                b_vals.append(1.0)
         else:
             neg_n = tuple(-x for x in n)
             if neg_n in pos_to_idx:
                 k = pos_to_idx[neg_n]
                 for i, j in pairs:
-                    A_real[k, i, j] = 1.0   # alpha contributes to Re (same)
-                    B_imag[k, i, j] = -1.0  # -beta contributes to Im
+                    flat = i * N_I + j
+                    a_rows.append(flat)
+                    a_cols.append(k)
+                    a_vals.append(1.0)
+                    b_rows.append(flat)
+                    b_cols.append(k)
+                    b_vals.append(-1.0)
 
-    # Build M_real and M_imag as CVXPY expressions
-    # M_real = M_0_real + sum_k alpha[k] * A_real[k] + sum_k beta[k] * B_real[k]
-    # M_imag = M_0_imag + sum_k alpha[k] * A_imag[k] + sum_k beta[k] * B_imag[k]
-    # (A_imag and B_real are all zero in our construction)
+    A_real_sp = sp.csc_matrix(
+        (a_vals, (a_rows, a_cols)), shape=(NN, N_pos), dtype=np.float64
+    )
+    B_imag_sp = sp.csc_matrix(
+        (b_vals, (b_rows, b_cols)), shape=(NN, N_pos), dtype=np.float64
+    )
 
-    M_real_expr = M_0_real
-    M_imag_expr = M_0_imag
-    for k in range(N_pos):
-        if np.any(A_real[k] != 0):
-            M_real_expr = M_real_expr + alpha[k] * A_real[k]
-        if np.any(A_imag[k] != 0):
-            M_imag_expr = M_imag_expr + alpha[k] * A_imag[k]
-        if np.any(B_real[k] != 0):
-            M_real_expr = M_real_expr + beta[k] * B_real[k]
-        if np.any(B_imag[k] != 0):
-            M_imag_expr = M_imag_expr + beta[k] * B_imag[k]
+    nnz = A_real_sp.nnz
+    density = nnz / (NN * N_pos) if (NN * N_pos) > 0 else 0.0
+    print(
+        f"  Basis matrices: {NN}x{N_pos}, nnz={nnz:,}, "
+        f"density={density:.4%}, "
+        f"sparse={nnz * 16 / 1e6:.1f} MB vs dense={NN * N_pos * 8 / 1e9:.1f} GB"
+    )
+
+    # Build CVXPY expressions using sparse matmul
+    M_real_flat = M_0_real.ravel() + A_real_sp @ alpha
+    M_imag_flat = M_0_imag.ravel() + B_imag_sp @ beta
+    M_real_expr = cp.reshape(M_real_flat, (N_I, N_I))
+    M_imag_expr = cp.reshape(M_imag_flat, (N_I, N_I))
 
     # Real PSD formulation: [M_real, -M_imag; M_imag, M_real] >> 0
     top = cp.hstack([M_real_expr, -M_imag_expr])
@@ -159,37 +164,7 @@ def solve_sdp_oracle(
 
     constraints = [M_block >> 0]
 
-    # Objective: minimize E = c0 + sum_m [a_m * (2*Re(c_m)) + b_m * (-2*Im(c_m))]
-    # The moments c_m here are the SDP decision variables.
-    # For positive m: Re(c_m) = alpha[pos_idx[m]], Im(c_m) = beta[pos_idx[m]]
-    # For negative m: Re(c_m) = alpha[pos_idx[-m]], Im(c_m) = -beta[pos_idx[-m]]
-    # So: a_m * 2*Re(c_m) + b_m * (-2)*Im(c_m)
-    #   = for positive m: 2*a_m*alpha[k] - 2*b_m*beta[k]
-    #   = for negative m (let m' = -m which is positive):
-    #     a_m * 2*alpha[pos_idx[m']] + b_m * (-2)*(-beta[pos_idx[m']])
-    #     = 2*a_m*alpha[k'] + 2*b_m*beta[k']
-    # But also a_{-m} = a_m (cos is even) and b_{-m} = -b_m (sin is odd) in standard Fourier
-    # Actually NO: our frequencies m are general multi-indices, and cos(m.z) and cos((-m).z)
-    # are the same function. So the energy should not have both m and -m as separate terms.
-    # Let me re-derive.
-    #
-    # E = c0 + sum_{m in energy_freqs} [a_m * cos(m.z) + b_m * sin(m.z)]
-    # E_μ = c0 + sum_m [a_m * E_μ[cos(m.z)] + b_m * E_μ[sin(m.z)]]
-    # E_μ[cos(m.z)] = Re(c_m + c_{-m}) = 2*Re(c_m) if we define c_m as half-moment
-    #
-    # Actually, with our definition c_m = E_μ[e^{im.z}]:
-    # E_μ[cos(m.z)] = Re(E_μ[e^{im.z}]) + Re(E_μ[e^{-im.z}]) / ... no.
-    # cos(m.z) = (e^{im.z} + e^{-im.z})/2
-    # E_μ[cos(m.z)] = (c_m + c_{-m})/2 = (c_m + conj(c_m))/2 = Re(c_m)
-    # sin(m.z) = (e^{im.z} - e^{-im.z})/(2i)
-    # E_μ[sin(m.z)] = (c_m - c_{-m})/(2i) = (c_m - conj(c_m))/(2i) = Im(c_m)/1 ... let me redo
-    # sin(m.z) = (e^{im.z} - e^{-im.z})/(2i)
-    # E_μ[sin(m.z)] = (c_m - conj(c_m))/(2i) = 2*Im(c_m)/(2) = Im(c_m)
-    # Wait: c_m - conj(c_m) = 2i*Im(c_m), so (c_m - conj(c_m))/(2i) = Im(c_m)
-    #
-    # So: E_μ[cos(m.z)] = Re(c_m), E_μ[sin(m.z)] = Im(c_m)
-    # => E_μ = c0 + sum_m [a_m * Re(c_m) + b_m * Im(c_m)]
-
+    # Objective: minimize E_μ = c0 + sum_m [a_m * Re(c_m) + b_m * Im(c_m)]
     obj_alpha_coeffs = np.zeros(N_pos, dtype=np.float64)
     obj_beta_coeffs = np.zeros(N_pos, dtype=np.float64)
     obj_constant = energy_surface.c0
@@ -197,23 +172,21 @@ def solve_sdp_oracle(
     for m_tuple, a_m in energy_surface.cos_coeffs.items():
         if m_tuple in pos_to_idx:
             k = pos_to_idx[m_tuple]
-            obj_alpha_coeffs[k] += a_m  # a_m * Re(c_m) = a_m * alpha[k]
+            obj_alpha_coeffs[k] += a_m
         else:
             neg_m = tuple(-x for x in m_tuple)
             if neg_m in pos_to_idx:
                 k = pos_to_idx[neg_m]
-                # Re(c_m) = Re(conj(c_{-m})) = Re(c_{-m}) = alpha[k]
                 obj_alpha_coeffs[k] += a_m
 
     for m_tuple, b_m in energy_surface.sin_coeffs.items():
         if m_tuple in pos_to_idx:
             k = pos_to_idx[m_tuple]
-            obj_beta_coeffs[k] += b_m  # b_m * Im(c_m) = b_m * beta[k]
+            obj_beta_coeffs[k] += b_m
         else:
             neg_m = tuple(-x for x in m_tuple)
             if neg_m in pos_to_idx:
                 k = pos_to_idx[neg_m]
-                # Im(c_m) = Im(conj(c_{-m})) = -Im(c_{-m}) = -beta[k]
                 obj_beta_coeffs[k] -= b_m
 
     objective = cp.Minimize(
@@ -230,7 +203,6 @@ def solve_sdp_oracle(
 
     if alpha.value is None or beta.value is None:
         print("  WARNING: SDP solver failed to find a solution")
-        # Return lifting_map.eval at the known global min as fallback
         s_star = lifting_map.eval(energy_surface.global_min)
         return s_star, sdp_bound, status
 
@@ -238,23 +210,19 @@ def solve_sdp_oracle(
     beta_val = np.asarray(beta.value, dtype=np.float64).ravel()
 
     # Extract s*_SDP in lifting map format
-    # For each frequency m_i in the lifting map:
-    #   s_cos[i] = E_μ[cos(m_i.z)] = Re(c_{m_i})
-    #   s_sin[i] = E_μ[sin(m_i.z)] = Im(c_{m_i})
     s_star = np.zeros(lifting_map.D, dtype=np.float64)
     for i, m_row in enumerate(lifting_map.frequency_matrix):
         m_tuple = tuple(int(x) for x in m_row)
         if m_tuple in pos_to_idx:
             k = pos_to_idx[m_tuple]
-            s_star[i] = alpha_val[k]                           # cos part = Re(c_m)
-            s_star[lifting_map.N_freq + i] = beta_val[k]       # sin part = Im(c_m)
+            s_star[i] = alpha_val[k]
+            s_star[lifting_map.N_freq + i] = beta_val[k]
         else:
             neg_m = tuple(-x for x in m_tuple)
             if neg_m in pos_to_idx:
                 k = pos_to_idx[neg_m]
-                s_star[i] = alpha_val[k]                        # Re(c_m) = Re(conj(c_{-m})) = alpha
-                s_star[lifting_map.N_freq + i] = -beta_val[k]   # Im(c_m) = -Im(c_{-m}) = -beta
-            # else: frequency not in SDP variables, leave as 0
+                s_star[i] = alpha_val[k]
+                s_star[lifting_map.N_freq + i] = -beta_val[k]
 
     return s_star.astype(np.float32), sdp_bound, status
 

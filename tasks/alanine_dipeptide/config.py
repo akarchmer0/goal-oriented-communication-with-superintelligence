@@ -21,7 +21,7 @@ class TrainConfig:
     success_threshold: float = 0.01
     enable_baselines: bool = True
     tune_baseline_lrs: bool = True
-    baseline_lr_candidates: str = "0.001,0.003,0.01,0.03,0.05,0.1,0.2"
+    baseline_lr_candidates: str = "0.001,0.003,0.007,0.01,0.02,0.03,0.05,"
     baseline_lr_tune_tasks: int = 64
     optimization_curve_tasks: int = 100
     enable_optimization_curve_eval: bool = True
@@ -63,6 +63,7 @@ class TrainConfig:
     logdir: str = "runs"
     run_name: str = ""
     device: str = "cpu"
+    use_simple_s_star: bool = False
     enable_training_plots: bool = True
 
     @property

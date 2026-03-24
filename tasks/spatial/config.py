@@ -5,10 +5,10 @@ from pathlib import Path
 @dataclass
 class TrainConfig:
     task: str = "spatial"
-    spatial_hidden_dim: int = 200
+    spatial_hidden_dim: int = 150
     spatial_visible_dim: int = 2
-    spatial_coord_limit: int = 8
-    spatial_token_dim: int = 200
+    spatial_coord_limit: int = 3
+    spatial_token_dim: int = 150
     spatial_token_noise_std: float = 0.0
     ppo_step_scale: float = 1.0
     spatial_step_size: float = 1.0
@@ -19,6 +19,7 @@ class TrainConfig:
     spatial_success_curriculum_decay: float = 0.2
     spatial_success_curriculum_min: float = 0.01
     spatial_basis_complexity: int = 3
+    spatial_freq_sparsity: int = 0
     spatial_f_type: str = "FOURIER"
     spatial_policy_arch: str = "mlp"
     spatial_refresh_map_each_episode: bool = False
@@ -31,9 +32,9 @@ class TrainConfig:
     spatial_objective_plateau_patience_episodes: int = 1000
     spatial_objective_plateau_min_delta: float = 1e-3
     spatial_objective_plateau_warmup_episodes: int = 500
-    spatial_baseline_lr_candidates: str = "0.001,0.003,0.01,0.03,0.05,0.1,0.2"
-    spatial_baseline_lr_tune_tasks: int = 64
-    spatial_optimization_curve_tasks: int = 100
+    spatial_baseline_lr_candidates: str = "0.0001,0.0003,0.0007,0.001,0.003,0.007,0.01,0.02,0.03,0.05,"
+    spatial_baseline_lr_tune_tasks: int = 300
+    spatial_optimization_curve_tasks: int = 300
     spatial_enable_optimization_curve_eval: bool = True
     n_env: int = 32
     algo: str = "ppo"
@@ -68,6 +69,8 @@ class TrainConfig:
     run_name: str = ""
     device: str = "cpu"
     enable_training_plots: bool = True
+    lattice_rl: bool = False
+    lattice_granularity: int = 20
 
     def resolve_run_dir(self) -> Path:
         base = Path(self.logdir)

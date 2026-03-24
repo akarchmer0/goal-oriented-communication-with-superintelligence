@@ -263,6 +263,25 @@ def _render_landscape_on_ax(
         fig.colorbar(contour, ax=ax, pad=0.01, fraction=0.045, label=landscape_label)
 
 
+def _break_at_wraps(tx: np.ndarray, ty: np.ndarray, threshold_deg: float = 180.0):
+    """Insert NaN at points where either coordinate jumps > threshold.
+
+    This prevents matplotlib from drawing long lines across the plot when the
+    trajectory wraps around the torus boundary.  Returns new (tx, ty) arrays
+    with NaN gaps inserted.
+    """
+    dx = np.abs(np.diff(tx))
+    dy = np.abs(np.diff(ty))
+    wrap_mask = (dx > threshold_deg) | (dy > threshold_deg)
+    if not np.any(wrap_mask):
+        return tx, ty
+    # Indices *after* which we need a NaN break
+    break_idxs = np.where(wrap_mask)[0] + 1  # position of the second point
+    tx_out = np.insert(tx.astype(np.float64), break_idxs, np.nan)
+    ty_out = np.insert(ty.astype(np.float64), break_idxs, np.nan)
+    return tx_out, ty_out
+
+
 def _render_single_trajectory(
     ax: plt.Axes,
     traj: np.ndarray,
@@ -278,10 +297,17 @@ def _render_single_trajectory(
         return
     tx = np.degrees(traj[:, 0])
     ty = np.degrees(traj[:, 1])
+    # Break the line at torus-wrap boundaries so matplotlib doesn't draw
+    # lines across the entire plot.
+    tx_line, ty_line = _break_at_wraps(tx, ty)
     ax.plot(
-        tx, ty, color=color, linewidth=1.5, alpha=0.92, zorder=4,
-        marker="o", markersize=2.3, markerfacecolor=color, markeredgewidth=0.0,
+        tx_line, ty_line, color=color, linewidth=1.5, alpha=0.92, zorder=4,
         label=label,
+    )
+    # Plot dots separately (NaN gaps would hide them in the line call)
+    ax.scatter(
+        tx, ty, color=color, s=5.3, alpha=0.92, zorder=5,
+        edgecolors="none",
     )
     ax.scatter(
         [start_xy_deg[0]], [start_xy_deg[1]], color="#fb8500", edgecolor="black",

@@ -886,10 +886,22 @@ def _build_env_with_sdp(
         seed=config.seed,
     )
     lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
-    s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
-        lifting_map, energy_surface, K_relax=config.K_relax
-    )
-    validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+
+    if config.use_simple_s_star:
+        c_vec = lifting_map.energy_as_linear(energy_surface)
+        c_norm = float(np.linalg.norm(c_vec))
+        R = float(np.sqrt(lifting_map.N_freq))
+        s_star_sdp = (-R * c_vec / max(c_norm, 1e-12)).astype(np.float32)
+        sdp_bound = float(np.dot(c_vec, s_star_sdp.astype(np.float64)) + energy_surface.c0)
+        sdp_status = "simple_norm_ball"
+        print(f"  Using simple norm-ball oracle: R={R:.2f}, ||c||={c_norm:.4f}")
+        print(f"  Norm-ball energy bound: {sdp_bound:.4f}")
+        validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+    else:
+        s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
+            lifting_map, energy_surface, K_relax=config.K_relax
+        )
+        validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
 
     env = VectorizedAlanineEnv(
         lifting_map=lifting_map,
@@ -950,11 +962,22 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
     lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
     print(f"Constructing lifting map: K_map={config.K_map}, D={lifting_map.D}")
 
-    print(f"Solving SDP relaxation (K_relax={config.K_relax})...")
-    s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
-        lifting_map, energy_surface, K_relax=config.K_relax
-    )
-    sdp_validation = validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+    if config.use_simple_s_star:
+        c_vec = lifting_map.energy_as_linear(energy_surface)
+        c_norm = float(np.linalg.norm(c_vec))
+        R = float(np.sqrt(lifting_map.N_freq))
+        s_star_sdp = (-R * c_vec / max(c_norm, 1e-12)).astype(np.float32)
+        sdp_bound = float(np.dot(c_vec, s_star_sdp.astype(np.float64)) + energy_surface.c0)
+        sdp_status = "simple_norm_ball"
+        print(f"  Using simple norm-ball oracle: R={R:.2f}, ||c||={c_norm:.4f}")
+        print(f"  Norm-ball energy bound: {sdp_bound:.4f}")
+        sdp_validation = validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+    else:
+        print(f"Solving SDP relaxation (K_relax={config.K_relax})...")
+        s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
+            lifting_map, energy_surface, K_relax=config.K_relax
+        )
+        sdp_validation = validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
 
     # Save SDP info
     sdp_info = {
@@ -1600,6 +1623,8 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
     parser.add_argument("--oracle_proj_dim", type=int, default=defaults.oracle_proj_dim)
     parser.add_argument("--s1_step_penalty", type=float, default=defaults.s1_step_penalty)
     parser.add_argument("--disable_training_plots", action="store_true")
+    parser.add_argument("--simple_s_star", action="store_true",
+                        help="Use norm-ball oracle s*=-R*c/||c|| instead of SDP relaxation.")
 
     args = parser.parse_args()
     seed_values = _parse_seed_values(args.seed)
@@ -1651,6 +1676,7 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         oracle_proj_dim=args.oracle_proj_dim,
         s1_step_penalty=args.s1_step_penalty,
         enable_training_plots=not args.disable_training_plots,
+        use_simple_s_star=args.simple_s_star,
     )
     return config, seed_values
 

@@ -27,8 +27,8 @@ def _extract_metric_series(
     if not metrics:
         return np.asarray([], dtype=np.float32), np.asarray([], dtype=np.float32)
 
-    episodes = np.asarray([float(m["episodes"]) for m in metrics], dtype=np.float64)
-    values = np.asarray([float(m[key]) for m in metrics], dtype=np.float64)
+    episodes = np.asarray([float(m["episodes"]) for m in metrics if key in m], dtype=np.float64)
+    values = np.asarray([float(m[key]) for m in metrics if key in m], dtype=np.float64)
 
     finite_mask = np.isfinite(episodes) & np.isfinite(values)
     episodes = episodes[finite_mask]
@@ -852,6 +852,151 @@ def plot_spatial_optimization_curve_summary(
     ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
     ax.set_title(title, loc="left", fontsize=11, pad=10)
     ax.legend(loc="upper right", frameon=False)
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=180)
+    plt.close(fig)
+
+
+def plot_spatial_success_rate_vs_step(
+    method_cumulative_success: dict[str, np.ndarray],
+    output_path: Path,
+    title: str,
+    method_labels: dict[str, str] | None = None,
+    x_label: str = "Optimization step",
+    y_label: str = "Tasks that reached target (%)",
+) -> None:
+    """Plot cumulative success rate vs optimization step for each method."""
+    valid: list[tuple[str, np.ndarray]] = []
+    for method_key, curve in method_cumulative_success.items():
+        arr = np.asarray(curve, dtype=np.float64).reshape(-1)
+        if arr.size < 2:
+            continue
+        valid.append((method_key, arr))
+    if not valid:
+        return
+
+    fig, ax = _make_axes(figsize=(8.8, 5.2))
+    for idx, (method_key, curve) in enumerate(valid):
+        color = _spatial_optimization_method_color(method_key, idx, len(valid))
+        label = (
+            method_labels.get(method_key, method_key)
+            if method_labels is not None
+            else method_key
+        )
+        steps = np.arange(curve.size, dtype=np.int64)
+        ax.plot(steps, curve * 100.0, color=color, linewidth=2.2, label=label)
+
+    horizon = max(arr.size for _, arr in valid) - 1
+    ax.set_title(title, loc="left", fontsize=11, pad=10)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_xlim(0.0, float(max(1, horizon)))
+    ax.set_ylim(0.0, 105.0)
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=8, integer=True))
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+    ax.grid(True, which="major", alpha=0.26, linewidth=0.8)
+    ax.grid(True, which="minor", alpha=0.10, linewidth=0.5)
+    ax.minorticks_on()
+    ax.legend(loc="lower right", frameon=False)
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=190)
+    plt.close(fig)
+
+
+def plot_spatial_final_success_rate_summary(
+    method_cumulative_success: dict[str, np.ndarray],
+    method_instantaneous_success: dict[str, np.ndarray],
+    output_path: Path,
+    title: str,
+    method_labels: dict[str, str] | None = None,
+) -> None:
+    """Bar chart comparing final cumulative vs instantaneous success rates."""
+    methods: list[str] = []
+    cum_vals: list[float] = []
+    inst_vals: list[float] = []
+    for method_key in SPATIAL_OPTIMIZATION_METHOD_ORDER:
+        cum_curve = method_cumulative_success.get(method_key)
+        inst_curve = method_instantaneous_success.get(method_key)
+        if cum_curve is None or inst_curve is None:
+            continue
+        cum_arr = np.asarray(cum_curve, dtype=np.float64).reshape(-1)
+        inst_arr = np.asarray(inst_curve, dtype=np.float64).reshape(-1)
+        if cum_arr.size < 1 or inst_arr.size < 1:
+            continue
+        methods.append(method_key)
+        cum_vals.append(float(cum_arr[-1]) * 100.0)
+        inst_vals.append(float(inst_arr[-1]) * 100.0)
+    if not methods:
+        return
+
+    labels = [
+        (method_labels.get(m, m) if method_labels is not None else m)
+        for m in methods
+    ]
+    x = np.arange(len(methods), dtype=np.float64)
+    width = 0.35
+
+    fig, ax = _make_axes(figsize=(max(6.0, 1.6 * len(methods)), 5.0))
+    ax.bar(x - width / 2, cum_vals, width, label="Ever reached", color="#1f6feb", alpha=0.85)
+    ax.bar(x + width / 2, inst_vals, width, label="At final step", color="#2da44e", alpha=0.85)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, rotation=25, ha="right", fontsize=9)
+    ax.set_ylabel("Success rate (%)")
+    ax.set_ylim(0.0, 105.0)
+    ax.set_title(title, loc="left", fontsize=11, pad=10)
+    ax.legend(frameon=False)
+    ax.yaxis.set_major_locator(MaxNLocator(nbins=6))
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=190)
+    plt.close(fig)
+
+
+def plot_spatial_training_success_rate(
+    metrics: list[dict],
+    output_path: Path,
+    title: str,
+) -> None:
+    """Plot running-average success rate vs training episodes for all methods."""
+    if not metrics:
+        return
+
+    fig, ax = _make_axes(figsize=(8.2, 4.8))
+    series_keys = [
+        ("success_rate", "RL hidden gradient"),
+        ("baseline_success_rate", "GD"),
+        ("adam_baseline_success_rate", "Adam"),
+        ("no_oracle_success_rate", "RL no oracle"),
+        ("visible_gradient_success_rate", "RL visible oracle"),
+    ]
+    success_arrays: list[np.ndarray] = []
+    for idx, (key, label) in enumerate(series_keys):
+        episodes, values = _extract_metric_series(metrics, key=key)
+        if episodes.size == 0:
+            continue
+        color = _spatial_optimization_method_color(
+            ["rl_hidden_gradient", "gd", "adam", "rl_no_oracle", "rl_visible_oracle"][idx],
+            idx,
+            len(series_keys),
+        )
+        smooth_window = _choose_smoothing_window(int(episodes.size))
+        smooth = _moving_average(values, smooth_window)
+        ax.plot(episodes, smooth, linewidth=1.8, color=color, label=label)
+        success_arrays.append(smooth)
+
+    if not success_arrays:
+        plt.close(fig)
+        return
+
+    _set_learning_axes(ax, float(max(1.0, max(m[-1] for m in [
+        _extract_metric_series(metrics, key=k)[0]
+        for k, _ in series_keys
+        if _extract_metric_series(metrics, key=k)[0].size > 0
+    ] if m.size > 0))), success_arrays)
+    ax.set_title(title, loc="left", fontsize=11, pad=10)
+    ax.legend(loc="lower right", frameon=False)
     fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=180)

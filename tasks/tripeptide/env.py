@@ -11,6 +11,7 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from .learned_lift import LearnedLiftOracle
 from .lifting_map import LiftingMap
 from .oracle import SpatialOracle
 
@@ -45,6 +46,9 @@ class VectorizedTripeptideEnv:
         baseline_lr_adam: float | None = None,
         success_threshold: float = 0.01,
         compute_episode_baselines: bool = True,
+        lattice_rl: bool = False,
+        lattice_granularity: int = 20,
+        learned_lift_oracle: LearnedLiftOracle | None = None,
     ):
         if sensing not in {"S0", "S1"}:
             raise ValueError("sensing must be S0 or S1")
@@ -79,11 +83,30 @@ class VectorizedTripeptideEnv:
         self.baseline_lr_adam = adam_lr
         self.success_threshold = float(success_threshold)
         self.compute_episode_baselines = bool(compute_episode_baselines)
+        self.learned_lift_oracle = learned_lift_oracle
+        if self.learned_lift_oracle is not None:
+            self.hidden_dim = self.learned_lift_oracle.D
         self.rng = np.random.default_rng(seed)
         self.baseline_rng = np.random.default_rng(int(seed) + 101_003)
         self.objective_scale_rng = np.random.default_rng(int(seed) + 202_007)
 
-        self.action_dim = self.visible_dim + 1  # direction (d) + step scale (1)
+        # Lattice RL mode: discrete actions over adjacent lattice nodes on torus.
+        self.lattice_rl = bool(lattice_rl)
+        self.lattice_granularity = int(lattice_granularity)
+        if self.lattice_rl:
+            if self.lattice_granularity < 2:
+                raise ValueError("lattice_granularity must be >= 2")
+            # Action space: 2 * visible_dim discrete actions (±1 along each axis).
+            self.action_dim = 2 * self.visible_dim
+            # Torus lattice spacing: [0, 2π) divided into lattice_granularity nodes.
+            self.lattice_spacing = float(TWO_PI / self.lattice_granularity)
+            # Lattice node coordinates along each dimension.
+            self.lattice_ticks = np.linspace(
+                0.0, TWO_PI, num=self.lattice_granularity,
+                endpoint=False, dtype=np.float32,
+            )
+        else:
+            self.action_dim = self.visible_dim + 1  # direction (d) + step scale (1)
         self.oracle_token_dim = int(self.oracle.token_dim)
         self.token_feature_dim = self.oracle_token_dim + self.visible_dim
 
@@ -121,13 +144,17 @@ class VectorizedTripeptideEnv:
     # ------------------------------------------------------------------
 
     def _hidden_from_z(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
+        if self.learned_lift_oracle is not None:
+            return self.learned_lift_oracle.eval(z)
         return self.lifting_map.eval(z)
 
     def _jacobian(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
         return self.lifting_map.jacobian(z)
 
     def _gradient_hidden(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
-        """Hidden gradient: F(z) - s*_SDP."""
+        """Hidden gradient: F(z) - s*_SDP, or ∇_s G(F(z)) for learned lift."""
+        if self.learned_lift_oracle is not None:
+            return self.learned_lift_oracle.gradient_s_from_z(z)
         idx = int(env_index)
         s = self._hidden_from_z(z, env_index=idx)
         return (s - self.s_star[idx]).astype(np.float32)
@@ -142,7 +169,9 @@ class VectorizedTripeptideEnv:
     # ------------------------------------------------------------------
 
     def _objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
-        """Surrogate objective: 0.5 * ||F(z) - s*||^2."""
+        """Surrogate objective: 0.5 * ||F(z) - s*||^2, or G(F(z)) - G(s*) for learned lift."""
+        if self.learned_lift_oracle is not None:
+            return float(self.learned_lift_oracle.objective_from_z(z))
         idx = int(env_index)
         s = self._hidden_from_z(z, env_index=idx)
         diff = s.astype(np.float64) - self.s_star[idx].astype(np.float64)
@@ -243,12 +272,40 @@ class VectorizedTripeptideEnv:
     def _wrap_to_torus(self, z: np.ndarray) -> np.ndarray:
         return (z % TWO_PI).astype(np.float32)
 
+    def _snap_to_lattice(self, z: np.ndarray) -> np.ndarray:
+        """Snap a torus position to the nearest lattice node."""
+        indices = np.round(z / self.lattice_spacing).astype(np.int32)
+        indices = indices % self.lattice_granularity
+        return self.lattice_ticks[indices].astype(np.float32)
+
+    def _apply_lattice_action(self, z: np.ndarray, action_index: int) -> np.ndarray:
+        """Move to an adjacent lattice node on the torus given a discrete action index.
+
+        Actions are enumerated as:
+            0 => +step along dim 0
+            1 => -step along dim 0
+            2 => +step along dim 1
+            3 => -step along dim 1
+            ...
+            2*d-2 => +step along dim d-1
+            2*d-1 => -step along dim d-1
+        """
+        action_index = int(action_index)
+        dim = action_index // 2
+        sign = 1.0 if (action_index % 2 == 0) else -1.0
+        delta = np.zeros(self.visible_dim, dtype=np.float32)
+        delta[dim] = float(sign * self.lattice_spacing)
+        updated = z + delta
+        return self._snap_to_lattice(self._wrap_to_torus(updated))
+
     def _apply_action(
         self,
         z: np.ndarray,
-        action: np.ndarray,
+        action: np.ndarray | int,
         step_scale_override: float | None = None,
     ) -> np.ndarray:
+        if self.lattice_rl:
+            return self._apply_lattice_action(z, int(action))
         action_vector = np.asarray(action, dtype=np.float32).reshape(-1)
         if action_vector.shape[0] not in {self.visible_dim, self.visible_dim + 1}:
             raise ValueError(
@@ -335,7 +392,10 @@ class VectorizedTripeptideEnv:
     # ------------------------------------------------------------------
 
     def _sample_xy(self) -> np.ndarray:
-        return self.rng.uniform(low=0.0, high=TWO_PI, size=self.visible_dim).astype(np.float32)
+        xy = self.rng.uniform(low=0.0, high=TWO_PI, size=self.visible_dim).astype(np.float32)
+        if self.lattice_rl:
+            xy = self._snap_to_lattice(xy)
+        return xy
 
     # ------------------------------------------------------------------
     # Episode management
@@ -494,20 +554,31 @@ class VectorizedTripeptideEnv:
         dones = np.zeros(self.n_env, dtype=np.bool_)
         infos: list[dict] = [{} for _ in range(self.n_env)]
 
-        action_vectors = np.asarray(actions, dtype=np.float32)
-        if action_vectors.ndim == 1:
-            action_vectors = action_vectors.reshape(1, -1)
-        if action_vectors.shape != (self.n_env, self.action_dim):
-            raise ValueError(
-                f"Expected actions with shape ({self.n_env}, {self.action_dim}), "
-                f"got {action_vectors.shape}"
-            )
+        if self.lattice_rl:
+            # Discrete actions: 1-D array of integer action indices, shape (n_env,).
+            action_indices = np.asarray(actions, dtype=np.int64).reshape(-1)
+            if action_indices.shape[0] != self.n_env:
+                raise ValueError(
+                    f"Expected {self.n_env} discrete actions, got {action_indices.shape[0]}"
+                )
+        else:
+            action_vectors = np.asarray(actions, dtype=np.float32)
+            if action_vectors.ndim == 1:
+                action_vectors = action_vectors.reshape(1, -1)
+            if action_vectors.shape != (self.n_env, self.action_dim):
+                raise ValueError(
+                    f"Expected actions with shape ({self.n_env}, {self.action_dim}), "
+                    f"got {action_vectors.shape}"
+                )
 
         for env_index in range(self.n_env):
             z_old = self.current_xy[env_index]
             e_old_raw = self._objective_value(z_old, env_index=env_index)
 
-            action = action_vectors[env_index]
+            if self.lattice_rl:
+                action = action_indices[env_index]
+            else:
+                action = action_vectors[env_index]
             z_new = self._apply_action(z_old, action)
             self.current_xy[env_index] = z_new
             self.steps[env_index] += 1
