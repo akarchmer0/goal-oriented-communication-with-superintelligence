@@ -47,7 +47,8 @@ htmlcov/
 !.env.example
 
 # Project-generated experiment outputs
-v2/runs/
+runs/
+plots/
 
 # Optional local scratch outputs
 *.tmp
