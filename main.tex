@@ -1,0 +1,498 @@
+\documentclass[10pt]{article}
+
+% ---------- Encoding and typography ----------
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[final]{microtype}
+
+% ---------- Page layout ----------
+\usepackage[margin=1in]{geometry}
+\usepackage{setspace}
+\usepackage{parskip}
+
+% ---------- Math ----------
+\usepackage{amsmath, amssymb, amsfonts, amsthm, mathtools, bm}
+\usepackage{bbm}
+\usepackage{dsfont}
+\usepackage{physics}
+
+% ---------- Tables and figures ----------
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{xcolor}
+
+% ---------- Algorithms and code ----------
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage{verbatim}
+
+% ---------- References and links ----------
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[colorlinks=true,linkcolor=blue,citecolor=blue,urlcolor=blue]{hyperref}
+\usepackage[nameinlink,capitalise,noabbrev]{cleveref}
+
+% ---------- Theorem environments ----------
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newtheorem{corollary}{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
+\newtheorem{assumption}{Assumption}
+\newtheorem{remark}{Remark}
+
+% ---------- Common macros ----------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\C}{\mathbb{C}}
+\newcommand{\T}{\mathbb{T}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\argmin}{\mathop{\mathrm{arg\,min}}}
+\newcommand{\argmax}{\mathop{\mathrm{arg\,max}}}
+% \newcommand{\tr}{\mathrm{tr}}
+% \newcommand{\rank}{\mathrm{rank}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\vol}{\mathrm{vol}}
+\newcommand{\poly}{\mathrm{poly}}
+\newcommand{\relu}{\mathrm{ReLU}}
+\newcommand{\sdp}{\mathrm{SDP}}
+\newcommand{\ppo}{\mathrm{PPO}}
+\newcommand{\gd}{\mathrm{GD}}
+\newcommand{\adam}{\mathrm{Adam}}
+\newcommand{\bh}{\mathrm{BH}}
+\newcommand{\suchthat}{\;\middle|\;}
+
+% ---------- Notation helpers ----------
+% \DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+% \DeclarePairedDelimiter{\abs}{\lvert}{\rvert}
+\DeclarePairedDelimiter{\inner}{\langle}{\rangle}
+\DeclarePairedDelimiter{\set}{\{}{\}}
+
+% ---------- Optional title info ----------
+\title{Non-convex Optimization with Lifted Oracles}
+\author{Ari Karchmer}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Many optimization problems in science are naturally expressed in low-dimensional coordinates that are highly non-convex, yet admit higher-dimensional \emph{lifted} representations in which the objective has simpler structure. We study whether a learned policy can exploit auxiliary information from such a lifted space to navigate non-convex landscapes more effectively than standard optimization methods operating in the original coordinates. In our framework, an RL-trained policy receives an \emph{oracle token}---a gradient signal from a high-dimensional hidden space---and converts it into sequential optimization steps in the original coordinate space. On a controlled synthetic benchmark with ``exact oracles,'' where the oracle is deliberately constructed as function of the original space minimum, the hidden-gradient agent outperforms gradient descent, Adam, CMA-ES, multi-start optimizers, basin hopping, random search, and a Jacobian pseudoinverse controller by $9$--$34\times$ in final objective. This result constitutes an \textit{oracle separation}, in that we demonstrate that there exist oracles for which access provides a vast advantage. Dimension scaling experiments further show that the oracle separation persists from $d=2$ to $d=6$ when appropriate sparsity controls are imposed on the lifting. These results provide a proof of concept for oracle-guided sequential decoding as an approach to non-convex optimization over lifted representations.
+
+Next, we turn our attention to a physically realistic surface. On the Ramachandran energy surface of alanine dipeptide, we show that a useful oracle can be \emph{constructed} via semidefinite relaxation \textit{without} knowledge of the global minimizer. This oracle, despite being substantially ``approximate,'' enables learning a policy with our method that terminates at the global-minimum, at a rate of $76\%$ (over random start states) compared to $3$--$10\%$ for all baselines. 
+
+% 
+\end{abstract}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/spatial_objective_by_method_2x5.png}
+    \caption{Per-method optimization curves on the synthetic task. Each panel shows individual task trajectories (faint lines) and the mean $\pm$ standard deviation (black). The RL hidden-gradient panel (bottom right) shows nearly all tasks converging to near-zero objective, while other methods exhibit wide variance and high residual objective values.}
+    \label{fig:spatial_by_method}
+\end{figure}
+
+% \newpage
+
+\section{Introduction}
+
+Many optimization problems in science are naturally expressed in low-dimensional coordinates with direct physical meaning, yet are highly non-convex in those coordinates. This mismatch means that the variables in which the problem is most interpretable are often the variables in which optimization is least tractable. Gradient-based methods can then become sensitive to initialization, stall at poor local minima, or make reliable progress only from a narrow range of favorable initializations. The resulting tension between \emph{physical coordinates} and \emph{optimization-friendly coordinates} appears across molecular modeling, inverse problems, control, and structured estimation.
+
+A particularly vivid example comes from molecular conformational search. The configuration of a molecule is often parameterized by a small number of torsional degrees of freedom, especially in reduced descriptions built around dihedral angles. These variables are physically meaningful and naturally periodic, but the resulting energy landscape can be very rugged and multimodal. Even in minimal systems such as alanine dipeptide, the torsion-angle free-energy surface exhibits multiple metastable regions separated by barriers, and in larger molecules this complexity grows rapidly with the number of rotatable bonds. From the standpoint of optimization, the native coordinates are appealing because they correspond directly to the physical mechanism of motion, but they are also precisely where we know non-convexity is most severe.
+
+At the same time, many non-convex problems admit alternative representations in which some of their structure becomes simpler. A recurring idea in optimization is to \emph{lift} the problem into a higher-dimensional space where nonlinear interactions become linear, quadratic objectives become convex, or global geometric information becomes easier to express. Classical examples include semidefinite relaxations for synchronization and distance geometry, moment and sum-of-squares lifts for polynomial optimization, and kernel-style feature maps that linearize otherwise complicated relationships. In these formulations, the original variables are not discarded; rather, they are embedded into a richer ambient space whose geometry is more favorable for optimization.
+
+This observation suggests a broad question: if a non-convex problem possesses a useful lifted representation, can an optimizer learn to exploit information from that representation even when optimization must ultimately occur in the original physical coordinates? In other words, can one benefit from a hidden optimization geometry without explicitly solving the original problem in the lifted space and mapping the answer back in closed form?
+
+This question is especially compelling because the map back from lifted variables to physical variables is often the difficult part. In convex lifts and relaxations, the hidden-space solution may not correspond to a unique feasible point in the original coordinates; it may be non-unique, approximate, or only meaningful up to a projection, rounding, or local refinement step. More generally, a signal that is globally informative in a lifted space need not translate into an obvious executable update in the visible space. The challenge is therefore not simply to invert a representation, but to \emph{act under it}: given guidance expressed in a hidden geometry, choose a sequence of moves in the original coordinates that improves the true objective.
+
+This perspective motivates a policy-based view of decoding. Rather than requiring a one-shot inverse map from lifted space back to physical space, one can instead seek a \emph{sequential decoder}: a learned policy that receives oracle information from a hidden representation and converts it into productive actions in the original non-convex space.
+
+In this work we study this idea through the lens of \emph{oracle-guided learned optimization}. We consider optimization problems in which the agent acts in a low-dimensional visible space, while receiving auxiliary information derived from a higher-dimensional lifted space in which the objective has a simpler structure. 
+Our aim is thus twofold:
+\begin{enumerate}
+    \item to understand whether a policy can \emph{use} lifted guidance---when such guidance is \textit{known to exist}---to navigate a rugged landscape more effectively than standard optimization in the original coordinates.
+    \item to develop technique and intuition to \textit{construct} oracles and high-dimensional lifts for oracle guidance on real problems where it is not \emph{a priori} clear such an oracle exists.
+\end{enumerate}
+
+Therefore, we tackle these aims in two stages.
+\begin{itemize}
+    \item Towards (1), we introduce a controlled synthetic setting in which the relation between visible-space non-convexity and hidden-space structure is known by construction. This synthetic family serves as a mechanism probe: it allows us to vary the quality and informativeness of the hidden oracle, cleanly separate hidden-space guidance from visible-space gradient information, and study when a learned policy can exploit the difference. The point of this setting is to establish an \textbf{oracle separation}. By designing a problem family with an explicit hidden structure, we can isolate the role of the oracle and study the decoding problem in a setting where the mechanism is fully legible.
+    \item Towards (2), we instantiate the framework on a physically grounded benchmark based on the torsional energy surface of alanine dipeptide. Here the role of the synthetic study and the molecular study are deliberately different. The alanine dipeptide setting asks a more practical question: can one instantiate our method by constructing an \textit{approximate} lifted oracle for a \textit{real} non-convex surface, without assuming direct knowledge of the global minimizer, and still obtain useful optimization guidance? Framed this way, the molecular experiment serves as a feasibility test for the broader idea that approximate lifted guidance can be operationalized by a learned policy on a real energy landscape.
+\end{itemize}
+These studies support three empirical conclusions, summarized in \Cref{tab:intro_headline_results}.
+
+\begin{itemize}
+    \item \textbf{Synthetic oracle separation.} In the controlled synthetic setting, the hidden-gradient policy reaches a final normalized objective of $0.019 \pm 0.001$, compared with $0.180$ for random search, $0.228$ for CMA-ES, and $0.511$ for the RL visible-oracle control. This corresponds to a $9.4\times$ improvement over the strongest non-RL baseline and a $26.7\times$ improvement over the visible-gradient RL agent, establishing a clear oracle separation.
+    \item \textbf{Constructed oracle on a real surface.} On alanine dipeptide, the SDP-constructed hidden-gradient policy reaches a final normalized objective of $0.034 \pm 0.002$ and a $76.1\%$ success rate at finding the global-minimum basin. The strongest baseline, CMA-ES, reaches $0.069 \pm 0.002$ final objective and $10.4\%$ success, while gradient-based methods remain at $3$--$5\%$ success. Thus, even an approximate constructed oracle is sufficient to guide the learned policy on a real non-convex energy landscape.
+    \item \textbf{Scaling beyond two visible dimensions.} In additional synthetic experiments with structured pairwise-sparse liftings, the hidden-gradient policy maintains a clear advantage from visible dimension $d=2$ to $d=6$. Its final normalized objective degrades only from $0.053$ to $0.103$, while Adam remains near $0.40$ and random search degrades more sharply. This suggests that the oracle separation is not purely a two-dimensional artifact, though the present experiments remain in a controlled proof-of-concept regime.
+\end{itemize}
+
+\begin{table}[t]
+    \centering
+    \caption{Headline results for the three empirical studies introduced above.}
+    \label{tab:intro_headline_results}
+    \small
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Study} & \textbf{Method} & \textbf{Final objective} & \textbf{Success rate} \\
+        \midrule
+        Synthetic spatial task & RL hidden gradient & $0.019 \pm 0.001$ & --- \\
+        Synthetic spatial task & Best non-RL baseline (random search) & $0.180 \pm 0.006$ & --- \\
+        \midrule
+        Alanine dipeptide & RL hidden gradient & $0.034 \pm 0.002$ & $76.1\%$ \\
+        Alanine dipeptide & Best baseline (CMA-ES) & $0.069 \pm 0.002$ & $10.4\%$ \\
+        \midrule
+        Dimension scaling ($d=2 \rightarrow 6$) & RL hidden gradient & $0.053 \rightarrow 0.103$ & --- \\
+        Dimension scaling ($d=2 \rightarrow 6$) & Adam & $\approx 0.40$ & --- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\section{Setup}
+
+We now describe the two experimental settings in which we study oracle-guided optimization. The first is a synthetic family of non-convex landscapes designed so that the hidden structure is known by construction. The second is a physically grounded benchmark based on the torsional energy surface of alanine dipeptide.
+
+\subsection{Synthetic spatial task}
+
+The synthetic setting is designed as a controlled laboratory for studying oracle guidance. We work in a two-dimensional visible space $\R^2$ with coordinate limit $[-3, 3]^2$, and embed it into a high-dimensional hidden space $\R^D$ with $D = 150$ via a random Fourier lifting map
+\[
+    F(z) \;=\; A z \;+\; a \odot \sin(W z + b) \;+\; c \odot \cos(V z + d),
+\]
+where $A \in \R^{D \times 2}$, $W, V \in \R^{D \times 2}$ are random frequency matrices with integer entries drawn from $\{-3, \ldots, 3\}^2$, and $a, b, c, d$ are random amplitude and phase vectors. Each seed of the experiment draws a fresh map $F$.
+
+Given a target point $z^* \in \R^2$, the hidden-space objective is
+\[
+    \mathcal{L}(z) \;=\; \tfrac{1}{2}\|F(z) - F(z^*)\|^2,
+\]
+which is convex in the lifted representation $s = F(z)$ but highly non-convex when projected back to the visible coordinates $z$. The oracle has access to the hidden-space gradient $\nabla_s \mathcal{L} = F(z) - F(z^*)$ and communicates it to the RL agent as a $D$-dimensional token at each step. The agent's action is a direction vector in $\R^2$ plus a scalar step size, and the objective value is normalized to $[0, 1]$.
+
+This construction gives us complete control over the oracle quality. By replacing the hidden gradient with the visible-space gradient $\nabla_z \mathcal{L}$, a random message, or no message at all, we can cleanly separate the effect of hidden-space guidance from other sources of information.
+
+\subsection{Alanine dipeptide task}
+
+The second setting uses the Ramachandran energy surface of alanine dipeptide, parameterized by the backbone torsion angles $(\phi, \psi) \in \T^2 = [0, 2\pi)^2$. The energy surface is derived from the AMBER ff14SB force field, evaluated on a fine grid and represented as a Fourier series
+\[
+    E(z) \;=\; c_0 + \sum_{m} \bigl[ a_m \cos(m \cdot z) + b_m \sin(m \cdot z) \bigr],
+\]
+with Fourier cutoff $K_{\mathrm{energy}} = 10$. The surface has 12 known local minima, a global minimum energy of $-5.91$ kJ/mol, and energy barriers separating the metastable basins.
+
+Unlike the synthetic setting, we do not assume knowledge of the global minimizer $z^*$. Instead, we \emph{construct} the oracle using a semidefinite programming (SDP) relaxation. We define a Fourier lifting map $F: \T^2 \to \R^D$ with $K_{\mathrm{map}} = 6$, giving $D = 2 \bigl((2 \cdot 6 + 1)^2 - 1\bigr) = 336$ hidden dimensions. Because the energy is linear in the lifted variables,
+\[
+    E(z) \;=\; c^{\!\top} F(z) + c_0,
+\]
+we can relax the optimization over the image of $F$ to an optimization over the trigonometric moment body:
+\[
+    s^*_{\sdp} \;=\; \argmin_{s} \;\; c^{\!\top} s + c_0 \qquad \text{subject to} \qquad M(s) \succeq 0,
+\]
+where $M(s)$ is the trigonometric moment matrix of order $K_{\mathrm{relax}} = 4$. The SDP relaxation produces a target $s^*_{\sdp} \in \R^D$ that approximates $F(z^*)$ without requiring knowledge of $z^*$. The oracle then communicates the hidden gradient $F(z) - s^*_{\sdp}$ at each step.
+
+In our experiments, the SDP solves to optimality with a bound of $-2.99$ kJ/mol (compared to the true minimum of $-5.91$ kJ/mol), and $\|s^*_{\sdp} - F(z^*)\| = 17.4$. Despite this approximation gap, the SDP-derived oracle provides sufficient directional information to guide the RL agent, as we demonstrate below.
+
+\subsection{Policy and training}
+
+In both settings, the agent is trained with Proximal Policy Optimization (PPO). The policy network is a two-layer MLP with 64 hidden units and $\tanh$ activations. The input consists of the oracle token (projected to 64 dimensions via a learned linear layer), the current visible-space coordinates, the normalized objective value, and the fraction of the episode elapsed. The policy outputs a continuous action: a direction in visible space and a scalar step magnitude.
+
+Training proceeds for 300{,}000 environment steps across 32 parallel environments, with rollout length 64, 4 PPO epochs per update, and a cosine learning rate schedule from $3 \times 10^{-4}$. Rewards are based on the change in the (actual, not surrogate) objective value between consecutive steps, with running return normalization for stability.
+
+For each experimental condition, we compare the following methods:
+\begin{itemize}
+    \item \textbf{GD}: gradient descent in the visible space with a tuned learning rate.
+    \item \textbf{Adam}: the Adam optimizer in the visible space with a tuned learning rate.
+    \item \textbf{Multi-start GD / Adam}: 5 random restarts with budget split evenly, keeping the best solution found across all restarts.
+    \item \textbf{CMA-ES}: Covariance Matrix Adaptation Evolution Strategy~\citep{hansen2003reducing}, a derivative-free population-based optimizer.
+    \item \textbf{Basin hopping + GD} (spatial only): basin hopping with GD as the local optimizer, with tuned local-step count and jump scale.
+    \item \textbf{Random search}: uniform random sampling from the domain, keeping the best point found.
+    \item \textbf{Jacobian controller}: a non-RL method that receives the same information as the RL hidden-gradient agent---the hidden gradient $g = F(z) - s^*$ and the Jacobian $J_F = \partial F / \partial z$---and computes the pseudoinverse update $\Delta z = -\alpha J_F^+ g$ via least squares. This baseline isolates whether the RL policy contributes beyond what a direct analytical decoder achieves.
+    \item \textbf{RL no oracle}: the same PPO agent architecture, but with the oracle token replaced by zeros.
+    \item \textbf{RL visible oracle}: the PPO agent receiving the visible-space gradient $\nabla_z \mathcal{L}$ as the oracle token (zero-padded to $D$ dimensions in the spatial task; $d$-dimensional in the alanine task).
+    \item \textbf{RL hidden gradient}: the PPO agent receiving the full hidden-space gradient as the oracle token.
+\end{itemize}
+Baseline learning rates for GD and Adam are tuned by grid search over the candidates $\{0.001, 0.003, 0.01, 0.02, 0.03, 0.05\}$ using a held-out set of tasks. Basin-hopping hyperparameters are similarly tuned. The Jacobian controller uses the same tuned GD learning rate with a cosine schedule.
+
+\paragraph{Budget fairness.} All methods are compared on an equal \emph{function-evaluation budget}: each method receives the same number of optimization steps (60 for the spatial task, 120 for alanine dipeptide). For population-based methods (CMA-ES, multi-start), the total number of function evaluations equals the horizon, so a CMA-ES population of size $\lambda$ consumes $\lambda$ evaluations per generation. The RL agent's training cost (300{,}000 environment steps) is amortized: once trained, the policy is deployed with a single forward pass per step and no additional function evaluations beyond computing the oracle token. We report evaluation-time performance only.
+
+\section{Results}
+
+\subsection{Oracle separation on synthetic landscapes}
+
+We first establish the oracle separation in the controlled synthetic setting, where the hidden-space structure is known by construction and the oracle is exact. We train five independent seeds, each with a fresh random Fourier map $F$, and evaluate each trained agent on 500 random-start tasks with a horizon of 60 steps.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/spatial_objective_vs_step.png}
+    \caption{Mean best-so-far normalized objective versus optimization step on the synthetic spatial task, averaged over 2{,}500 evaluation tasks (5 seeds $\times$ 500 tasks). Shaded regions show $\pm 1$ standard deviation. The RL agent with hidden-gradient oracle (yellow) converges rapidly to near-zero objective, while all other methods remain at substantially higher values.}
+    \label{fig:spatial_curves}
+\end{figure}
+
+\Cref{fig:spatial_curves} shows the mean best-so-far normalized objective as a function of optimization step. The RL agent with hidden-gradient oracle converges rapidly, reaching a mean final objective of $0.019 \pm 0.001$ (95\% CI). All other methods achieve substantially worse performance, including both the original baselines and the stronger baselines added to probe the separation: GD ($0.475$), Adam ($0.475$), multi-start GD ($0.263$), multi-start Adam ($0.375$), CMA-ES ($0.228$), basin hopping ($0.252$), random search ($0.180$), RL without oracle ($0.575$), and RL with visible-gradient oracle ($0.511$). The hidden-gradient agent outperforms the strongest non-RL baseline (random search) by a factor of $9.4\times$, and outperforms the visible-gradient RL agent by $26.7\times$.
+
+The Jacobian pseudoinverse controller ($0.644$) is a particularly revealing case: despite receiving the \emph{same information} as the RL hidden-gradient agent---the full hidden gradient and the Jacobian of the lifting map---it performs worse than even simple gradient descent. This demonstrates that the RL policy's advantage is not merely informational: the learned nonlinear, state-dependent decoding strategy contributes substantially beyond what a direct analytical decoder achieves.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/spatial_objective_by_method.png}
+    \caption{Per-method optimization curves on the synthetic task. Each panel shows individual task trajectories (faint lines) and the mean $\pm$ standard deviation (black). The RL hidden-gradient panel (bottom left) shows nearly all tasks converging to near-zero objective, while other methods exhibit wide variance and high residual objective values.}
+    \label{fig:spatial_by_method}
+\end{figure}
+
+\Cref{fig:spatial_by_method} shows the per-method breakdown. The RL hidden-gradient panel is qualitatively different from all others: nearly every task converges to near-zero objective within 15 steps, while the other methods show wide variance and many tasks stalling at high values. Notably, the RL agent without oracle (\emph{bottom left}) performs \emph{worse} than gradient descent and basin hopping, confirming that the policy itself does not confer an advantage---it is specifically the hidden-space oracle that enables the separation.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figures/spatial_trajectory_example.png}
+    \caption{Example trajectories on a 2D energy landscape (seed 0, task 1). The PPO agent with hidden-gradient oracle (black) navigates directly to the global minimum, while the no-oracle agent (blue) oscillates in a suboptimal region and the visible-gradient agent (green) follows a meandering path.}
+    \label{fig:spatial_trajectory}
+\end{figure}
+
+\Cref{fig:spatial_trajectory} illustrates typical trajectories. The hidden-gradient agent takes a direct, purposeful path to the global minimum, while the no-oracle agent becomes trapped oscillating near a local minimum, and the visible-gradient agent follows a circuitous descent path that does not reach the global optimum within the allotted horizon.
+
+These results establish that, when a good oracle exists, a learned policy can exploit it to navigate highly non-convex landscapes with dramatically greater effectiveness than any of the baseline methods. The separation is not marginal: across 2{,}500 evaluation tasks, the hidden-gradient agent achieves a best-so-far objective of $0.0007 \pm 0.0001$, meaning it locates a point within $0.07\%$ of the global minimum on average.
+
+\begin{table}[t]
+    \centering
+    \caption{Summary of final normalized objective on the synthetic spatial task (5 seeds, 500 tasks per seed, horizon 60). Mean $\pm$ 95\% CI computed over all 2{,}500 evaluation tasks. Methods are grouped by information access: gradient-based (visible gradient only), derivative-free, hidden-information baselines, and RL agents.}
+    \label{tab:spatial_results}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Method} & \textbf{Final objective} & \textbf{Ratio to RL hidden} \\
+        \midrule
+        \multicolumn{3}{l}{\emph{Visible-space gradient methods}} \\
+        GD (tuned LR)          & $0.475 \pm 0.007$ & $24.9\times$ \\
+        Adam (tuned LR)        & $0.475 \pm 0.007$ & $24.9\times$ \\
+        Multi-start GD (5$\times$)  & $0.263 \pm 0.009$ & $13.8\times$ \\
+        Multi-start Adam (5$\times$) & $0.375 \pm 0.007$ & $19.6\times$ \\
+        \midrule
+        \multicolumn{3}{l}{\emph{Derivative-free / global methods}} \\
+        Basin hopping + GD     & $0.252 \pm 0.009$ & $13.2\times$ \\
+        CMA-ES                 & $0.228 \pm 0.008$ & $11.9\times$ \\
+        Random search          & $0.180 \pm 0.006$ & $9.4\times$ \\
+        \midrule
+        \multicolumn{3}{l}{\emph{Hidden-info baseline (same info as RL hidden)}} \\
+        Jacobian controller ($J_F^+ g$) & $0.644 \pm 0.006$ & $33.7\times$ \\
+        \midrule
+        \multicolumn{3}{l}{\emph{RL agents}} \\
+        RL no oracle           & $0.575 \pm 0.005$ & $30.1\times$ \\
+        RL visible oracle      & $0.511 \pm 0.006$ & $26.7\times$ \\
+        \textbf{RL hidden gradient} & $\bm{0.019 \pm 0.001}$ & $1.0\times$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Constructed oracle on alanine dipeptide}
+
+We now turn to the physically grounded setting, where the key question is whether one can \emph{construct} a useful oracle for a real energy surface without assuming knowledge of the global minimizer. We use the SDP-based oracle described in Section~2.2, which produces an approximate hidden-space target $s^*_{\sdp}$ from the Fourier structure of the Ramachandran surface alone. We train three independent seeds and evaluate each on 500 random-start tasks with a horizon of 120 steps.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/alanine_objective_vs_step.png}
+    \caption{Mean normalized energy versus optimization step on the alanine dipeptide Ramachandran surface, averaged over 1{,}500 evaluation tasks (3 seeds $\times$ 500 tasks). The RL agent with hidden-gradient (SDP) oracle (yellow) rapidly decreases the energy and maintains the lowest objective throughout, despite the oracle being constructed without knowledge of the global minimum.}
+    \label{fig:alanine_curves}
+\end{figure}
+
+\Cref{fig:alanine_curves} shows the optimization curves on the alanine dipeptide surface. The RL agent with the SDP-constructed hidden-gradient oracle achieves a mean final normalized objective of $0.034 \pm 0.002$, substantially outperforming all baselines including the stronger ones: GD ($0.106$), Adam ($0.097$), multi-start GD ($0.058$), multi-start Adam ($0.085$), CMA-ES ($0.069$), random search ($0.065$), RL without oracle ($0.245$), and RL with visible-gradient oracle ($0.133$). The Jacobian controller ($0.332$) again performs poorly despite receiving the same oracle information, reinforcing the finding from the synthetic task that a learned decoder is essential.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/alanine_success_rate.png}
+    \caption{Cumulative success rate (fraction of tasks reaching the global minimum within threshold) versus optimization step on the alanine dipeptide surface. The RL hidden-gradient agent reaches $76\%$ success, while all other methods remain below $6\%$.}
+    \label{fig:alanine_success}
+\end{figure}
+
+The most striking result appears in the cumulative success rate (\Cref{fig:alanine_success}). We define success as reaching a normalized energy within $1\%$ of the global minimum. The RL hidden-gradient agent achieves a cumulative success rate of $76.1\%$, while most methods remain below $6\%$: GD ($3.8\%$), Adam ($4.5\%$), multi-start GD ($3.4\%$), multi-start Adam ($4.6\%$), random search ($3.3\%$), RL no oracle ($5.1\%$), and RL visible oracle ($5.4\%$). CMA-ES achieves a notably higher success rate of $10.4\%$---the strongest non-RL baseline on this metric---but still falls far short of the hidden-gradient agent. This represents approximately a $7.3\times$ improvement over CMA-ES and a $14\times$ improvement over gradient-based methods.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=\textwidth]{figures/alanine_trajectory_example.png}
+    \caption{Example trajectories on the Ramachandran surface (seed 0, task 1), showing all five methods. The PPO hidden-gradient oracle (top left) navigates to the global minimum, while GD (top center) scatters across the surface, Adam (top right) converges to a local minimum, the no-oracle RL (bottom left) wanders, and the visible-gradient RL (bottom center) follows a noisy descent path.}
+    \label{fig:alanine_trajectories}
+\end{figure}
+
+\Cref{fig:alanine_trajectories} shows example trajectories on the Ramachandran plot. The hidden-gradient agent navigates efficiently to the global minimum basin, while the gradient-based methods either scatter across the periodic surface (GD), converge to nearby local minima (Adam), or wander without clear direction (RL no oracle, RL visible oracle).
+
+\begin{table}[t]
+    \centering
+    \caption{Summary of optimization performance on the alanine dipeptide Ramachandran surface (3 seeds, 500 tasks per seed, horizon 120). The SDP oracle is constructed without knowledge of the global minimizer. Success rate is the fraction of tasks reaching within $1\%$ of the global minimum energy.}
+    \label{tab:alanine_results}
+    \begin{tabular}{lccc}
+        \toprule
+        \textbf{Method} & \textbf{Final objective} & \textbf{Success rate} & \textbf{Ratio to RL hidden} \\
+        \midrule
+        \multicolumn{4}{l}{\emph{Visible-space gradient methods}} \\
+        GD (tuned LR)          & $0.106 \pm 0.004$ & $3.8\%$  & $3.1\times$ \\
+        Adam (tuned LR)        & $0.097 \pm 0.003$ & $4.5\%$  & $2.8\times$ \\
+        Multi-start GD (5$\times$)  & $0.058 \pm 0.001$ & $3.3\%$ & $1.7\times$ \\
+        Multi-start Adam (5$\times$) & $0.085 \pm 0.002$ & $4.5\%$ & $2.5\times$ \\
+        \midrule
+        \multicolumn{4}{l}{\emph{Derivative-free / global methods}} \\
+        CMA-ES                 & $0.069 \pm 0.002$ & $10.4\%$ & $2.0\times$ \\
+        Random search          & $0.065 \pm 0.001$ & $3.3\%$  & $1.9\times$ \\
+        \midrule
+        \multicolumn{4}{l}{\emph{Hidden-info baseline}} \\
+        Jacobian controller ($J_F^+ g$) & $0.332 \pm 0.009$ & $0.1\%$ & $9.7\times$ \\
+        \midrule
+        \multicolumn{4}{l}{\emph{RL agents}} \\
+        RL no oracle           & $0.245 \pm 0.008$ & $5.1\%$  & $7.2\times$ \\
+        RL visible oracle      & $0.133 \pm 0.004$ & $5.4\%$  & $3.9\times$ \\
+        \textbf{RL hidden gradient} & $\bm{0.034 \pm 0.002}$ & $\bm{76.1\%}$ & $1.0\times$ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+These results demonstrate two important points. First, the SDP relaxation produces a useful oracle even though it has a substantial approximation gap: the SDP bound ($-2.99$ kJ/mol) is far from the true minimum ($-5.91$ kJ/mol), and $\|s^*_{\sdp} - F(z^*)\| = 17.4$. Despite this, the directional information in the hidden gradient $F(z) - s^*_{\sdp}$ is sufficient to guide the learned policy to the global minimum basin in a large majority of trials. Second, the results are consistent across seeds: the per-seed final objectives are $0.038$, $0.032$, and $0.033$, with per-seed success rates of $74\%$, $78\%$, and $77\%$.
+
+\subsection{The role of the oracle}
+
+The preceding experiments demonstrate the oracle separation---that access to hidden-space guidance enables dramatically better optimization---but they leave open the question of \emph{why} this separation arises. To build intuition, we consider what information each oracle mode provides.
+
+In the hidden-gradient mode, the agent receives $g_t = F(z_t) - s^*$ at each step, a $D$-dimensional vector pointing from the current lifted state $F(z_t)$ toward the target $s^*$ in the hidden space. Because the hidden-space objective $\frac{1}{2}\|F(z) - s^*\|^2$ is convex in $s = F(z)$, this gradient is globally informative: it always points toward the optimum in the lifted representation, regardless of the current position. The policy's task is to decode this signal into a productive move in visible space, which requires learning the local relationship between hidden-space directions and visible-space displacements---essentially, learning to invert (or at least productively exploit) the Jacobian $\partial F / \partial z$ implicitly.
+
+By contrast, the visible-gradient oracle provides $\nabla_z \mathcal{L}$, which is a local descent direction in the non-convex visible-space landscape. This gradient is informative only within a single basin of attraction and provides no information about the global structure of the landscape. The no-oracle agent receives no guidance at all and must rely entirely on the scalar reward signal and its own position.
+
+The Jacobian pseudoinverse controller provides an important control for understanding the role of the learned policy. This baseline receives exactly the same information as the RL hidden-gradient agent---the hidden gradient $g = F(z) - s^*$ and implicitly the Jacobian $J_F$---but uses a fixed analytical rule ($\Delta z = -\alpha J_F^+ g$) rather than a learned policy. If the pseudoinverse controller matched the RL agent, it would suggest that no learning is necessary and the oracle information can be exploited by a simple linear decoder. The gap between the Jacobian controller and the RL agent (reported in Tables~\ref{tab:spatial_results} and~\ref{tab:alanine_results}) quantifies the value of learning a nonlinear, state-dependent decoding strategy over the analytical alternative.
+
+The separation therefore reflects a fundamental asymmetry: the hidden-space gradient encodes global geometric information that is not available in any visible-space quantity. A policy that learns to decode this signal gains access to a form of guidance that is qualitatively different from---and complementary to---local gradient information. This is precisely the mechanism that convex lifts are designed to provide, but here it is operationalized through a learned sequential decoder rather than a closed-form inverse map.
+
+On the alanine dipeptide surface, the same mechanism operates through an approximate oracle. The SDP relaxation does not recover $F(z^*)$ exactly, but it does produce a target $s^*_{\sdp}$ that lies in the correct region of the lifted space. The hidden gradient $F(z) - s^*_{\sdp}$ therefore provides a \emph{biased but directionally useful} signal: it may not point exactly toward the global minimum, but it points toward a region of lifted space that is energetically favorable. The learned policy, having been trained to decode such signals over many episodes, is robust to this bias and can still navigate effectively.
+
+\subsection{Robustness and generalization}
+
+We conduct three ablation studies on the synthetic spatial task to probe the robustness of the oracle-guided approach.
+
+\paragraph{Oracle noise.} We train the RL agent with a clean oracle (noise standard deviation $\sigma = 0$) and then evaluate it under increasing levels of Gaussian noise injected into the oracle token at test time ($\sigma \in \{0, 0.5, 1.0, 2.0, 5.0, 10.0\}$). \Cref{fig:oracle_noise} shows that performance degrades gracefully: the agent maintains near-optimal performance up to moderate noise levels and remains substantially better than all non-oracle baselines even at high noise. This indicates that the learned policy is robust to oracle corruption and does not depend on exact gradient information.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/oracle_noise_ablation.png}
+    \caption{Oracle noise robustness: final normalized objective of the RL hidden-gradient agent as a function of oracle noise standard deviation, evaluated on 600 tasks (3 seeds $\times$ 200 tasks). Performance degrades gracefully with increasing noise.}
+    \label{fig:oracle_noise}
+\end{figure}
+
+\paragraph{Hidden dimension.} We vary the basis complexity $k \in \{1, 2, 3, 5\}$ of the Fourier lifting map, which controls the hidden dimension $D = 50k$. \Cref{fig:hidden_dim} reveals a non-monotonic relationship: performance improves from $D = 50$ to $D = 100$--$150$, but degrades at $D = 250$. The sweet spot at moderate dimensions likely reflects a trade-off: higher $D$ provides richer oracle information, but the fixed-capacity policy network (64 hidden units) must compress an increasingly high-dimensional token through a learned projection, making learning harder. This suggests that scaling to very high hidden dimensions requires correspondingly larger policy networks. At all tested dimensions, the oracle-guided agent remains competitive with or better than the non-oracle baselines.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.6\textwidth]{figures/hidden_dim_ablation.png}
+    \caption{Hidden dimension ablation: final normalized objective as a function of hidden dimension $D$ (controlled by basis complexity $k$), evaluated on 600 tasks (3 seeds $\times$ 200 tasks).}
+    \label{fig:hidden_dim}
+\end{figure}
+
+\paragraph{Generalization to unseen maps.} By default, each training seed uses a single fixed Fourier map $F$. We test whether the trained policy generalizes to \emph{unseen} Fourier maps by evaluating on fresh randomly drawn maps at test time. \Cref{fig:unseen_maps} reveals that a policy trained on a single map does \emph{not} generalize well to unseen maps, with a substantial performance gap. This indicates that the current policy partially learns map-specific structure rather than a fully general decoding strategy. Training with map refreshing (a fresh $F$ each episode) or meta-learning over map families would be a natural way to improve generalization, and we leave this to future work. The result also clarifies that the oracle separation demonstrated in Sections 3.1--3.2 reflects the policy's ability to exploit a \emph{specific} oracle, which is the relevant setting when the oracle is constructed for a given problem instance.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/unseen_maps_generalization.png}
+    \caption{Generalization to unseen Fourier maps. Left: bar chart comparing final objective on the training map vs.\ fresh unseen maps. Right: mean optimization curves for both conditions.}
+    \label{fig:unseen_maps}
+\end{figure}
+
+\subsection{Dimension scaling}
+\label{sec:dimension_scaling}
+
+A key question for the practical relevance of oracle-guided optimization is whether the oracle separation persists as the visible dimension $d$ grows. Na\"ively, the hidden dimension of the Fourier lifting grows as $(2K+1)^d$, which is exponential in $d$. However, when the energy surface has structured sparsity---for instance, when it involves only pairwise interactions between coordinates---one can restrict the frequency vectors to have at most $r$ nonzero components (freq\_sparsity $r$), reducing the effective hidden dimension to $O\bigl(\binom{d}{r}K^r\bigr)$, which grows polynomially in $d$ for fixed $r$ and $K$.
+
+We test this scaling strategy by varying the visible dimension $d \in \{2, 3, 4, 5, 6\}$ with pairwise sparsity ($r = 2$) and basis complexity $K = 2$. To handle the growing action space, we discretize the policy's actions onto a lattice grid (lattice RL) with granularity $G$ that decreases with $d$ to keep the total number of lattice nodes manageable. \Cref{tab:scaling_config} summarizes the configuration for each dimension.
+
+\begin{table}[t]
+    \centering
+    \caption{Dimension scaling configurations. $d$: visible dimension; $D$: hidden dimension; $G$: lattice granularity; training steps scale with $d$.}
+    \label{tab:scaling_config}
+    \small
+    \begin{tabular}{cccccc}
+        \toprule
+        $d$ & $D$ & $G$ & Actions & Train steps \\
+        \midrule
+        2 & 50  & 20 & 4  & 300K \\
+        3 & 100 & 15 & 6  & 400K \\
+        4 & 200 & 11 & 8  & 500K \\
+        5 & 300 & 9  & 10 & 600K \\
+        6 & 400 & 7  & 12 & 750K \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\Cref{fig:dim_scaling} shows the results (3 seeds $\times$ 200 tasks per dimension). The RL hidden-gradient agent consistently outperforms all baselines at every tested dimension. Performance degrades gracefully from $0.053$ at $d = 2$ to $0.103$ at $d = 6$, despite a $3\times$ increase in visible dimension and the use of a discrete lattice action space. The separation is most dramatic against Adam (which remains near $0.40$ across all dimensions, yielding $4$--$12\times$ separations) and random search ($3.5$--$7\times$), both of which suffer from the curse of dimensionality. GD with cosine-annealed learning rate improves at higher dimensions (from $0.32$ at $d = 2$ to $0.13$ at $d = 6$), likely because the pairwise-sparse Fourier landscapes become smoother relative to the GD step size. Nevertheless, the RL agent maintains an advantage at all dimensions tested.
+
+The per-dimension optimization curves (\Cref{fig:dim_scaling_curves}) reveal that the RL agent converges within the first $20$--$30$ steps at all dimensions, while the baselines either plateau early (GD, Adam) or improve slowly (random search). The $d = 3$ case is particularly strong: the RL agent achieves $0.035$, better than $d = 2$, likely because the richer pairwise structure in 3D provides more informative oracle guidance while the policy capacity remains sufficient.
+
+These results demonstrate that the oracle separation is not an artifact of the $d = 2$ setting: it extends to moderate dimensions when appropriate complexity controls (frequency sparsity, lattice discretization) are employed. The principal bottleneck at higher dimensions appears to be the fixed-capacity policy network (64 hidden units), which must compress an increasingly high-dimensional oracle token; scaling the policy alongside the dimension is a natural extension.
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/dimension_scaling_final_obj.png}
+    \caption{Dimension scaling: final normalized objective as a function of visible dimension $d$ for RL hidden gradient and baselines ($K{=}2$, pairwise sparsity, lattice RL). Evaluated on 600 tasks (3 seeds $\times$ 200 tasks) per dimension.}
+    \label{fig:dim_scaling}
+\end{figure}
+
+\begin{figure}[t]
+    \centering
+    \includegraphics[width=0.92\textwidth]{figures/dimension_scaling_curves.png}
+    \caption{Per-dimension optimization curves showing mean normalized objective over the episode horizon. The RL agent converges within 20--30 steps at all dimensions.}
+    \label{fig:dim_scaling_curves}
+\end{figure}
+
+\section{Discussion}
+
+The experiments presented here establish a clear oracle separation: when a policy has access to hidden-space guidance derived from a lifted representation, it can navigate non-convex landscapes far more effectively than standard optimization methods operating in the original coordinates. The separation is robust to the inclusion of stronger baselines---including CMA-ES, multi-start optimizers, and a Jacobian pseudoinverse controller that receives the same information as the RL agent---and holds both in a controlled synthetic setting where the oracle is exact, and on a real molecular energy surface where the oracle is constructed via semidefinite relaxation without knowledge of the global minimum.
+
+\subsection{Implications for non-convex optimization}
+
+The most immediate implication is that the value of a convex lift or relaxation is not limited to obtaining a relaxed solution that can be rounded back to the original space. Even when the relaxation is loose---as in our alanine experiments, where the SDP bound is far from the true minimum---the \emph{gradient of the surrogate objective in the lifted space} can serve as a useful signal for guiding sequential optimization in the original coordinates. This suggests an alternative use of convex relaxations: rather than solving the relaxation and rounding, one can use the relaxation to construct an oracle and train a policy to decode its guidance. We emphasize that this is a proof-of-concept finding in low-dimensional settings; whether the approach scales to higher-dimensional problems remains an open question.
+
+The visible-gradient control is informative here. The visible-space gradient $\nabla_z \mathcal{L}$ is itself a function of the hidden structure (via the chain rule, $\nabla_z \mathcal{L} = J_F^\top(F(z) - s^*)$ where $J_F$ is the Jacobian of the lifting map), but it collapses the $D$-dimensional hidden gradient into a $d$-dimensional visible gradient, losing most of the information about the hidden geometry. The RL visible-gradient agent consistently underperforms the hidden-gradient agent, confirming that the high-dimensional hidden gradient carries information that is not recoverable from its visible-space projection.
+
+\subsection{On constructing oracles}
+
+A central contribution of this work is the demonstration that useful oracles can be \emph{constructed} rather than assumed. The SDP-based oracle for alanine dipeptide is a proof of concept: it uses only the Fourier structure of the energy surface and standard convex optimization machinery to produce a hidden-space target, without any knowledge of the global minimizer or the basin structure of the landscape.
+
+The Fourier lifting map $F: \T^d \to \R^D$ and the trigonometric moment relaxation provide a natural framework for this construction on periodic domains. The key insight is that the energy, being a trigonometric polynomial, is \emph{linear} in the lifted variables $F(z)$, and the image of the torus under $F$ is contained in the trigonometric moment body defined by the PSD constraint $M(s) \succeq 0$. The SDP therefore minimizes the energy over a convex outer approximation of $\{F(z) : z \in \T^d\}$, and the minimizer $s^*_{\sdp}$ serves as a surrogate target in the hidden space.
+
+This construction generalizes naturally. Any energy surface expressible as a trigonometric polynomial admits a Fourier lifting and a corresponding moment relaxation. The parameters $K_{\mathrm{map}}$ (lifting cutoff) and $K_{\mathrm{relax}}$ (relaxation order) control the dimension and tightness of the relaxation, respectively. Higher $K_{\mathrm{relax}}$ gives tighter bounds but larger SDPs; in our experiments, $K_{\mathrm{relax}} = 4$ with $K_{\mathrm{map}} = 6$ provides a good balance between computational cost and oracle quality.
+
+More broadly, the oracle construction is not limited to SDP relaxations. Any procedure that produces a useful target in a lifted space---including norm-ball gradient descent, learned embeddings, or AI-generated surrogates---could in principle serve as the basis for an oracle. The key requirement is that the hidden-space signal provides directional information that is not available from the visible-space gradient alone.
+
+\subsection{Scaling considerations}
+
+The dimension scaling experiments in \Cref{sec:dimension_scaling} provide initial evidence that the oracle separation extends beyond $d = 2$. Using pairwise frequency sparsity ($r = 2$) and lattice discretization, the RL hidden-gradient agent maintains a clear advantage over baselines up to $d = 6$ (visible dimension), with hidden dimensions scaling to $D = 400$. Several observations and open questions arise.
+
+\textbf{Visible dimension.} The RL agent's performance degrades gracefully with dimension (final objective $0.053$ at $d = 2$ to $0.103$ at $d = 6$), while Adam and random search degrade more rapidly. GD improves at higher dimensions in the pairwise-sparse regime, likely because the restricted frequency structure produces smoother landscapes. The key bottleneck for the RL agent appears to be the fixed-capacity policy network (64 hidden units), which must compress increasingly large oracle tokens. Scaling the policy alongside the dimension is a natural next step.
+
+\textbf{Hidden dimension.} The full Fourier lifting has dimension $(2K + 1)^d$, exponential in $d$. However, frequency sparsity constraints reduce this to $O\bigl(\binom{d}{r}K^r\bigr)$, which grows polynomially for fixed interaction order $r$. In our experiments with $r = 2$ and $K = 2$, the hidden dimension scales from $D = 50$ at $d = 2$ to $D = 400$ at $d = 6$, remaining computationally tractable. For real molecular systems, structured sparsity in the energy coefficients (many Fourier modes are negligible) suggests that compressed or adaptive liftings could reduce $D$ further. Learned lifting maps that select the most informative hidden dimensions are a natural direction.
+
+\textbf{SDP scalability.} The moment matrix has size $(2K_{\mathrm{relax}} + 1)^d$, and the SDP becomes computationally demanding for $d \geq 4$ with moderate $K_{\mathrm{relax}}$. For larger problems, first-order SDP solvers, low-rank approximations, or alternative relaxation hierarchies (e.g., DSOS/SDSOS) may be necessary. Alternatively, one could train a neural network to approximate the SDP solution, amortizing the cost over many problem instances.
+
+\subsection{Toward learned oracle construction}
+
+The oracle framework developed here is deliberately agnostic about how the oracle is constructed. We have demonstrated two points on a spectrum: an exact oracle (synthetic, built with knowledge of $z^*$) and an SDP oracle (alanine, built without knowledge of $z^*$ using only the Fourier structure of the energy surface). Between these extremes lies a range of oracle construction methods that could be explored in future work.
+
+The key requirement for a useful oracle is that it provides directional information in the hidden space that is not available from the visible-space gradient alone. In principle, any procedure that produces a surrogate target $s^*$ in a lifted space could serve this role---including learned embeddings, alternative relaxation hierarchies (e.g., DSOS/SDSOS for scalability), or meta-learned lifting maps that generalize across problem families. We view the SDP construction demonstrated here as a proof of concept for oracle construction, not as the only viable approach.
+
+Two concrete extensions seem tractable in the near term. First, \emph{iterative oracle refinement}: alternating between running the RL decoder to explore the landscape and updating the oracle using information gathered during exploration, which could improve oracle quality even when the initial construction is crude. Second, \emph{amortized oracle construction}: training a model that maps problem descriptions (domain, symmetries, energy coefficients) to oracle parameters, avoiding the per-instance SDP solve.
+
+\section{Conclusion}
+
+We have studied oracle-guided non-convex optimization, in which a learned policy receives auxiliary information from a high-dimensional lifted space and converts it into optimization steps in the original low-dimensional coordinates. Our experiments demonstrate three main findings.
+
+First, in a controlled synthetic setting with exact oracles, we observe a strong oracle separation: the RL agent with hidden-gradient guidance achieves a $9$--$34\times$ improvement in final objective over gradient descent, Adam, CMA-ES, multi-start optimizers, basin hopping, random search, a Jacobian pseudoinverse controller, and RL agents without oracle access. The separation persists against all baselines, including one (the Jacobian controller) that receives exactly the same hidden-space information as the RL agent. The visible-space gradient, despite containing some information about the hidden structure, is insufficient to close this gap. Robustness experiments confirm that the approach degrades gracefully under oracle noise, though a policy trained on a single Fourier map does not generalize to unseen maps without additional training diversity.
+
+Second, on the Ramachandran energy surface of alanine dipeptide, we show that a useful oracle can be \emph{constructed} from the Fourier structure of the energy surface via semidefinite relaxation, without any knowledge of the global minimizer. Despite a substantial approximation gap, the SDP-based oracle enables the RL agent to find the global minimum in $76\%$ of trials, compared to $3$--$10\%$ for all baselines. This demonstrates that oracle-guided optimization is not limited to settings where the oracle is given; it can be instantiated on real problems using standard convex optimization tools.
+
+Third, dimension scaling experiments show that the oracle separation is not an artifact of the $d = 2$ setting. Using pairwise frequency sparsity and lattice discretization, the RL agent maintains a clear advantage over baselines from $d = 2$ to $d = 6$, with $4$--$12\times$ separation over Adam and $3.5$--$7\times$ over random search. The agent's performance degrades gracefully ($0.053$ to $0.103$) despite a $3\times$ increase in visible dimension and a growing hidden space ($D = 50$ to $400$).
+
+Together, these results provide a proof of concept for oracle-guided sequential decoding as an approach to non-convex optimization. The idea is to lift the problem into a higher-dimensional space, construct an approximate oracle from the lifted structure, and train a sequential decoder to convert oracle guidance into productive actions. The decoder is trained by reinforcement learning and requires no closed-form inverse map from the lifted space. This framework is modular---different oracle construction methods can be paired with the same RL decoder---and it opens the door to future work on learned lifting maps, alternative oracle construction methods, and scaling to higher-dimensional optimization problems. The principal limitation is the reliance on Fourier lifting maps with known structure; extending to more general problem classes and further scaling the visible dimension with larger policy networks are important directions for future work.
+
+\begin{thebibliography}{1}
+\bibitem[Hansen and Ostermeier(2001)]{hansen2003reducing}
+N.~Hansen and A.~Ostermeier.
+\newblock Completely derandomized self-adaptation in evolution strategies.
+\newblock \emph{Evolutionary Computation}, 9(2):159--195, 2001.
+\end{thebibliography}
+
+\end{document}
