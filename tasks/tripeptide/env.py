@@ -1,17 +1,19 @@
-"""Vectorized RL environment for tripeptide torus optimization.
+"""Vectorized RL environment for tripeptide torus optimization with SDP oracle.
 
-Mirrors the interface of VectorizedAlanineEnv but operates on the d-dimensional
-torus [0, 2pi)^d with d=4 backbone torsion angles.
+Operates on the d-dimensional torus [0, 2pi)^d with d=4 backbone torsion angles
+(phi1, psi1, phi2, psi2).
 
-The objective is 0.5 * ||F(z) - s*_SDP||^2 where s*_SDP is precomputed by the
-SDP relaxation. The hidden gradient oracle provides F(z) - s*_SDP.
+Reward is energy-based: the agent is rewarded for lowering the actual energy
+E(z) on the torus. The oracle provides "advice" via the hidden-gradient token
+(gradient of ||F(z) - s*_SDP||^2), but the reward itself does not depend on
+the SDP surrogate. Success is tracked as reaching energy within a threshold
+of the known global minimum energy.
 """
 
 from dataclasses import dataclass
 
 import numpy as np
 
-from .learned_lift import LearnedLiftOracle
 from .lifting_map import LiftingMap
 from .oracle import SpatialOracle
 
@@ -42,13 +44,12 @@ class VectorizedTripeptideEnv:
         reward_noise_std: float = 0.0,
         step_size: float = 0.3,
         ppo_step_scale: float = 1.0,
+        lattice_rl: bool = False,
+        lattice_granularity: int = 20,
         baseline_lr_gd: float | None = None,
         baseline_lr_adam: float | None = None,
         success_threshold: float = 0.01,
         compute_episode_baselines: bool = True,
-        lattice_rl: bool = False,
-        lattice_granularity: int = 20,
-        learned_lift_oracle: LearnedLiftOracle | None = None,
     ):
         if sensing not in {"S0", "S1"}:
             raise ValueError("sensing must be S0 or S1")
@@ -83,14 +84,11 @@ class VectorizedTripeptideEnv:
         self.baseline_lr_adam = adam_lr
         self.success_threshold = float(success_threshold)
         self.compute_episode_baselines = bool(compute_episode_baselines)
-        self.learned_lift_oracle = learned_lift_oracle
-        if self.learned_lift_oracle is not None:
-            self.hidden_dim = self.learned_lift_oracle.D
         self.rng = np.random.default_rng(seed)
         self.baseline_rng = np.random.default_rng(int(seed) + 101_003)
         self.objective_scale_rng = np.random.default_rng(int(seed) + 202_007)
 
-        # Lattice RL mode: discrete actions over adjacent lattice nodes on torus.
+        # Lattice RL mode: discrete actions over adjacent lattice nodes.
         self.lattice_rl = bool(lattice_rl)
         self.lattice_granularity = int(lattice_granularity)
         if self.lattice_rl:
@@ -98,9 +96,8 @@ class VectorizedTripeptideEnv:
                 raise ValueError("lattice_granularity must be >= 2")
             # Action space: 2 * visible_dim discrete actions (±1 along each axis).
             self.action_dim = 2 * self.visible_dim
-            # Torus lattice spacing: [0, 2π) divided into lattice_granularity nodes.
+            # Precompute lattice spacing on [0, 2pi).
             self.lattice_spacing = float(TWO_PI / self.lattice_granularity)
-            # Lattice node coordinates along each dimension.
             self.lattice_ticks = np.linspace(
                 0.0, TWO_PI, num=self.lattice_granularity,
                 endpoint=False, dtype=np.float32,
@@ -114,15 +111,16 @@ class VectorizedTripeptideEnv:
         self.s_star_sdp = np.asarray(s_star_sdp, dtype=np.float32).ravel()
         self.s_star = np.tile(self.s_star_sdp, (self.n_env, 1)).astype(np.float32)
 
-        # Reference minimum from energy surface (for distance metrics, NOT for oracle)
+        # Reference minimum from energy surface (for distance metrics and success)
         self.reference_min_xy = np.asarray(
             energy_surface.global_min, dtype=np.float32
         ).ravel()
         self.reference_min_xy_env = np.tile(
             self.reference_min_xy, (self.n_env, 1)
         ).astype(np.float32)
+        self.global_min_energy = float(energy_surface.global_min_energy)
 
-        # Estimate max objective for normalization
+        # Estimate max energy range for normalization
         self.max_objective = self._estimate_max_objective()
         self.max_objective_env = np.full(self.n_env, self.max_objective, dtype=np.float32)
 
@@ -132,6 +130,7 @@ class VectorizedTripeptideEnv:
         self.horizons = np.ones(self.n_env, dtype=np.int32)
         self.initial_dist = np.ones(self.n_env, dtype=np.int32)
         self.initial_objective = np.ones(self.n_env, dtype=np.float32)
+        self.torus_offset = np.zeros((self.n_env, self.visible_dim), dtype=np.float32)
         self.completed_episodes = 0
 
         self.f_type = "FOURIER"
@@ -143,39 +142,49 @@ class VectorizedTripeptideEnv:
     # Lifting map and gradient helpers
     # ------------------------------------------------------------------
 
+    def _to_true_coords(self, z: np.ndarray, env_index: int) -> np.ndarray:
+        """Map agent-frame coordinates to true (unrotated) coordinates."""
+        return self._wrap_to_torus(z + self.torus_offset[int(env_index)])
+
     def _hidden_from_z(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
-        if self.learned_lift_oracle is not None:
-            return self.learned_lift_oracle.eval(z)
-        return self.lifting_map.eval(z)
+        return self.lifting_map.eval(self._to_true_coords(z, env_index))
 
     def _jacobian(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
-        return self.lifting_map.jacobian(z)
+        return self.lifting_map.jacobian(self._to_true_coords(z, env_index))
 
     def _gradient_hidden(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
-        """Hidden gradient: F(z) - s*_SDP, or ∇_s G(F(z)) for learned lift."""
-        if self.learned_lift_oracle is not None:
-            return self.learned_lift_oracle.gradient_s_from_z(z)
+        """Hidden gradient: F(z) - s*_SDP."""
         idx = int(env_index)
         s = self._hidden_from_z(z, env_index=idx)
         return (s - self.s_star[idx]).astype(np.float32)
 
     def _gradient_xy(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
         """True energy gradient in visible (torus) space — for baselines."""
-        grad = self.energy_surface.gradient(z)
+        grad = self.energy_surface.gradient(self._to_true_coords(z, env_index))
         return np.asarray(grad, dtype=np.float32)
 
     # ------------------------------------------------------------------
-    # Objective: 0.5 * ||F(z) - s*_SDP||^2
+    # Surrogate objective: 0.5 * ||F(z) - s*_SDP||^2  (for oracle only)
     # ------------------------------------------------------------------
 
-    def _objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
-        """Surrogate objective: 0.5 * ||F(z) - s*||^2, or G(F(z)) - G(s*) for learned lift."""
-        if self.learned_lift_oracle is not None:
-            return float(self.learned_lift_oracle.objective_from_z(z))
+    def _surrogate_value(self, z: np.ndarray, env_index: int = 0) -> float:
+        """Surrogate objective for oracle gradient: 0.5 * ||F(z) - s*||^2."""
         idx = int(env_index)
         s = self._hidden_from_z(z, env_index=idx)
         diff = s.astype(np.float64) - self.s_star[idx].astype(np.float64)
         return float(0.5 * np.dot(diff, diff))
+
+    # ------------------------------------------------------------------
+    # Energy-based objective (used for reward and success)
+    # ------------------------------------------------------------------
+
+    def _energy_value(self, z: np.ndarray, env_index: int = 0) -> float:
+        """Actual energy E(z) on the torus."""
+        return float(self.energy_surface.energy(self._to_true_coords(z, env_index)))
+
+    def _objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
+        """Objective is actual energy E(z)."""
+        return self._energy_value(z, env_index=env_index)
 
     def _set_max_objective(self, value: float, env_index: int = 0) -> None:
         idx = int(env_index)
@@ -185,29 +194,30 @@ class VectorizedTripeptideEnv:
             self.max_objective = float(bounded)
 
     def _estimate_max_objective(self, samples: int = 2048, env_index: int = 0) -> float:
+        """Estimate energy range for normalization."""
         sampled = self.objective_scale_rng.uniform(
             low=0.0, high=TWO_PI, size=(samples, self.visible_dim)
         ).astype(np.float32)
-        values = np.asarray(
-            [self._objective_value(point) for point in sampled], dtype=np.float32
-        )
-        max_value = float(np.max(values)) if values.size > 0 else 1.0
-        return max(1.0, max_value)
+        energies = self.energy_surface.energy_batch(sampled)
+        energy_range = float(np.max(energies) - self.global_min_energy)
+        return max(1.0, energy_range)
 
     def _refresh_objective_scale(self, env_index: int = 0, samples: int = 512) -> float:
         value = self._estimate_max_objective(samples=samples, env_index=env_index)
         self._set_max_objective(value, env_index=env_index)
         return float(value)
 
-    def _normalized_objective_from_raw(self, objective: float, env_index: int = 0) -> float:
+    def _normalized_objective_from_raw(self, energy: float, env_index: int = 0) -> float:
+        """Normalize energy to [0, 1] range: (E - E_min) / (E_max - E_min)."""
         scale = max(float(self.max_objective_env[int(env_index)]), 1e-8)
-        return float(np.clip(float(objective) / scale, 0.0, 1.0))
+        return float(np.clip((float(energy) - self.global_min_energy) / scale, 0.0, 1.0))
 
     def _normalized_objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
-        raw = self._objective_value(z, env_index=env_index)
+        raw = self._energy_value(z, env_index=env_index)
         return self._normalized_objective_from_raw(raw, env_index=env_index)
 
     def _is_success(self, z: np.ndarray, env_index: int = 0) -> bool:
+        """Success: energy within threshold of the global minimum."""
         normalized = self._normalized_objective_value(z, env_index=env_index)
         return bool(normalized <= self.success_threshold)
 
@@ -244,17 +254,17 @@ class VectorizedTripeptideEnv:
 
     def get_obs(self) -> dict[str, np.ndarray]:
         token_features = self._get_token_features()
-        objective = np.asarray(
+        energy_vals = np.asarray(
             [
-                self._objective_value(self.current_xy[idx], env_index=idx)
+                self._energy_value(self.current_xy[idx], env_index=idx)
                 for idx in range(self.n_env)
             ],
             dtype=np.float32,
         )
         z_feature = np.asarray(
             [
-                self._normalized_objective_from_raw(value, env_index=idx)
-                for idx, value in enumerate(objective)
+                self._normalized_objective_from_raw(float(energy_vals[idx]), env_index=idx)
+                for idx in range(self.n_env)
             ],
             dtype=np.float32,
         )
@@ -273,13 +283,13 @@ class VectorizedTripeptideEnv:
         return (z % TWO_PI).astype(np.float32)
 
     def _snap_to_lattice(self, z: np.ndarray) -> np.ndarray:
-        """Snap a torus position to the nearest lattice node."""
+        """Snap a position to the nearest lattice node on [0, 2pi)."""
         indices = np.round(z / self.lattice_spacing).astype(np.int32)
         indices = indices % self.lattice_granularity
         return self.lattice_ticks[indices].astype(np.float32)
 
     def _apply_lattice_action(self, z: np.ndarray, action_index: int) -> np.ndarray:
-        """Move to an adjacent lattice node on the torus given a discrete action index.
+        """Move to an adjacent lattice node given a discrete action index.
 
         Actions are enumerated as:
             0 => +step along dim 0
@@ -287,8 +297,6 @@ class VectorizedTripeptideEnv:
             2 => +step along dim 1
             3 => -step along dim 1
             ...
-            2*d-2 => +step along dim d-1
-            2*d-1 => -step along dim d-1
         """
         action_index = int(action_index)
         dim = action_index // 2
@@ -392,10 +400,7 @@ class VectorizedTripeptideEnv:
     # ------------------------------------------------------------------
 
     def _sample_xy(self) -> np.ndarray:
-        xy = self.rng.uniform(low=0.0, high=TWO_PI, size=self.visible_dim).astype(np.float32)
-        if self.lattice_rl:
-            xy = self._snap_to_lattice(xy)
-        return xy
+        return self.rng.uniform(low=0.0, high=TWO_PI, size=self.visible_dim).astype(np.float32)
 
     # ------------------------------------------------------------------
     # Episode management
@@ -403,13 +408,21 @@ class VectorizedTripeptideEnv:
 
     def sample_episode_spec(self, env_index: int = 0, refresh_map: bool = False) -> TripeptideEpisodeSpec:
         idx = int(env_index)
-        target_min = self.reference_min_xy.copy()
+
+        # Random torus rotation so the policy cannot memorize positions
+        offset = self.rng.uniform(low=0.0, high=TWO_PI, size=self.visible_dim).astype(np.float32)
+        self.torus_offset[idx] = offset
+
+        # Reference minimum in the agent's (rotated) frame
+        target_min = self._wrap_to_torus(self.reference_min_xy - offset)
         source = self._sample_xy()
+        if self.lattice_rl:
+            source = self._snap_to_lattice(source)
 
         self.reference_min_xy_env[idx] = target_min
         self.s_star[idx] = self.s_star_sdp.copy()
 
-        initial_objective = self._objective_value(source, env_index=idx)
+        initial_objective = self._energy_value(source, env_index=idx)
         diff = source.astype(np.float64) - target_min.astype(np.float64)
         diff = (diff + np.pi) % TWO_PI - np.pi
         shortest_dist = int(np.ceil(np.linalg.norm(diff, ord=1) / self.step_size))
@@ -457,7 +470,61 @@ class VectorizedTripeptideEnv:
         env_index: int = 0,
         base_lr: float | None = None,
     ) -> tuple[float, float]:
+        state, _ = self._rollout_adam_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=base_lr,
+        )
+        final_objective = self._energy_value(state, env_index=env_index)
+        final_ref_distance = self._reference_distance(state, env_index=env_index)
+        return final_objective, final_ref_distance
+
+    def _rollout_descent_baseline_final_stats(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> tuple[float, float]:
+        state, _ = self._rollout_descent_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=base_lr,
+        )
+        final_objective = self._energy_value(state, env_index=env_index)
+        final_ref_distance = self._reference_distance(state, env_index=env_index)
+        return final_objective, final_ref_distance
+
+    def _rollout_descent_baseline_trace(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
         state = start_xy.astype(np.float32).copy()
+        energy_trace: list[float] = []
+        for step in range(int(horizon)):
+            grad_xy = self._gradient_xy(state, env_index=env_index)
+            lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=base_lr)
+            update = (-lr_t * grad_xy).astype(np.float32)
+            state = self._apply_baseline_optimizer_step(state, update)
+            energy_trace.append(float(self._energy_value(state, env_index=env_index)))
+            if self._is_success(state, env_index=env_index):
+                break
+        return state, np.asarray(energy_trace, dtype=np.float32)
+
+    def _rollout_adam_baseline_trace(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        state = start_xy.astype(np.float32).copy()
+        energy_trace: list[float] = []
         d = self.visible_dim
         m = np.zeros(d, dtype=np.float64)
         v = np.zeros(d, dtype=np.float64)
@@ -475,30 +542,40 @@ class VectorizedTripeptideEnv:
             lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=lr0)
             adam_update = (-lr_t * (m_hat / (np.sqrt(v_hat) + eps))).astype(np.float32)
             state = self._apply_baseline_optimizer_step(state, adam_update)
+            energy_trace.append(float(self._energy_value(state, env_index=env_index)))
             if self._is_success(state, env_index=env_index):
                 break
-        final_objective = float(self._objective_value(state, env_index=env_index))
-        final_ref_distance = self._reference_distance(state, env_index=env_index)
-        return final_objective, final_ref_distance
+        return state, np.asarray(energy_trace, dtype=np.float32)
 
-    def _rollout_descent_baseline_final_stats(
+    def rollout_baseline_energy_trace(
         self,
         start_xy: np.ndarray,
         horizon: int,
         env_index: int = 0,
         base_lr: float | None = None,
-    ) -> tuple[float, float]:
-        state = start_xy.astype(np.float32).copy()
-        for step in range(int(horizon)):
-            grad_xy = self._gradient_xy(state, env_index=env_index)
-            lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=base_lr)
-            update = (-lr_t * grad_xy).astype(np.float32)
-            state = self._apply_baseline_optimizer_step(state, update)
-            if self._is_success(state, env_index=env_index):
-                break
-        final_objective = float(self._objective_value(state, env_index=env_index))
-        final_ref_distance = self._reference_distance(state, env_index=env_index)
-        return final_objective, final_ref_distance
+    ) -> np.ndarray:
+        _, trace = self._rollout_descent_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=(self.baseline_lr_gd if base_lr is None else float(base_lr)),
+        )
+        return trace
+
+    def rollout_adam_baseline_energy_trace(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> np.ndarray:
+        _, trace = self._rollout_adam_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=base_lr,
+        )
+        return trace
 
     def rollout_baseline_final_objective(
         self,
@@ -512,7 +589,7 @@ class VectorizedTripeptideEnv:
         return final_objective
 
     # ------------------------------------------------------------------
-    # Energy landscape grid (for validation/plotting only)
+    # Energy landscape grid (for visualization)
     # ------------------------------------------------------------------
 
     def energy_landscape_grid(
@@ -520,7 +597,7 @@ class VectorizedTripeptideEnv:
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Return energy on a 2D slice (first two angles) for visualization.
 
-        For d=4, we fix angles 3 and 4 at the global minimum values
+        For d>2, we fix angles 3..d at the global minimum values
         and scan angles 1 and 2.
         """
         res = max(10, int(resolution))
@@ -528,14 +605,16 @@ class VectorizedTripeptideEnv:
         psi_1d = np.linspace(0, TWO_PI, res, endpoint=False, dtype=np.float64)
         phi_grid, psi_grid = np.meshgrid(phi_1d, psi_1d, indexing="xy")
         energy_grid = np.zeros_like(phi_grid)
-        fixed_angles = self.reference_min_xy[2:]  # fix last d-2 angles at global min
+        # Fix remaining angles at the rotated reference min for this env
+        fixed_angles = self.reference_min_xy_env[int(env_index)][2:]
         for i in range(res):
             for j in range(res):
                 z = np.concatenate([
                     np.array([phi_grid[i, j], psi_grid[i, j]], dtype=np.float32),
                     fixed_angles,
                 ])
-                energy_grid[i, j] = self.energy_surface.energy(z)
+                z_true = self._to_true_coords(z, env_index)
+                energy_grid[i, j] = self.energy_surface.energy(z_true)
         return (
             phi_grid.astype(np.float32),
             psi_grid.astype(np.float32),
@@ -555,7 +634,6 @@ class VectorizedTripeptideEnv:
         infos: list[dict] = [{} for _ in range(self.n_env)]
 
         if self.lattice_rl:
-            # Discrete actions: 1-D array of integer action indices, shape (n_env,).
             action_indices = np.asarray(actions, dtype=np.int64).reshape(-1)
             if action_indices.shape[0] != self.n_env:
                 raise ValueError(
@@ -573,7 +651,7 @@ class VectorizedTripeptideEnv:
 
         for env_index in range(self.n_env):
             z_old = self.current_xy[env_index]
-            e_old_raw = self._objective_value(z_old, env_index=env_index)
+            energy_old = self._energy_value(z_old, env_index=env_index)
 
             if self.lattice_rl:
                 action = action_indices[env_index]
@@ -583,19 +661,22 @@ class VectorizedTripeptideEnv:
             self.current_xy[env_index] = z_new
             self.steps[env_index] += 1
 
-            e_new_raw = self._objective_value(z_new, env_index=env_index)
-            e_new_normalized = self._normalized_objective_from_raw(e_new_raw, env_index=env_index)
-            success = bool(e_new_normalized <= self.success_threshold)
+            energy_new = self._energy_value(z_new, env_index=env_index)
+            success = self._is_success(z_new, env_index=env_index)
             timeout = int(self.steps[env_index]) >= int(self.horizons[env_index])
             episode_done = bool(success or timeout)
+            info = {
+                "episode_done": False,
+                "success": bool(success),
+                "energy_raw": float(energy_new),
+                "energy": self._normalized_objective_from_raw(float(energy_new), env_index=env_index),
+            }
 
+            # Reward = energy progress (positive when energy decreases)
             if self.sensing == "S0":
-                progress = float(e_old_raw - e_new_raw)
-                reward = progress
-                if success:
-                    reward += 100.0
+                reward = float(energy_old - energy_new)
             else:
-                reward = 100.0 if success else self.s1_step_penalty
+                reward = self.s1_step_penalty
 
             if self.reward_noise_std > 0.0:
                 reward += float(self.rng.normal(loc=0.0, scale=self.reward_noise_std))
@@ -625,9 +706,9 @@ class VectorizedTripeptideEnv:
                             env_index=env_index,
                         )
                     )
-                info = {
+                info.update({
                     "episode_done": True,
-                    "success": success,
+                    "success": bool(success),
                     "episode_len": episode_len,
                     "shortest_dist": shortest_dist,
                     "initial_objective": self._normalized_objective_from_raw(
@@ -635,9 +716,9 @@ class VectorizedTripeptideEnv:
                     ),
                     "initial_objective_raw": float(self.initial_objective[env_index]),
                     "final_objective": self._normalized_objective_from_raw(
-                        float(e_new_raw), env_index=env_index
+                        float(energy_new), env_index=env_index
                     ),
-                    "final_objective_raw": float(e_new_raw),
+                    "final_objective_raw": float(energy_new),
                     "final_ref_distance": self._reference_distance(z_new, env_index=env_index),
                     "baseline_final_objective": self._normalized_objective_from_raw(
                         float(baseline_final_objective), env_index=env_index
@@ -649,11 +730,13 @@ class VectorizedTripeptideEnv:
                     ),
                     "adam_baseline_final_objective_raw": float(adam_baseline_final_objective),
                     "adam_baseline_final_ref_distance": float(adam_baseline_final_ref_distance),
-                }
+                })
                 if success and shortest_dist > 0:
                     info["stretch"] = float(episode_len / shortest_dist)
                 infos[env_index] = info
                 self._reset_env(env_index)
+            else:
+                infos[env_index] = info
 
         next_obs = self.get_obs()
         return next_obs, rewards, dones, infos

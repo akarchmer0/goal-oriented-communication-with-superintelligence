@@ -10,7 +10,7 @@ import matplotlib
 matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.ticker import MaxNLocator
+from matplotlib.ticker import MaxNLocator, PercentFormatter
 
 
 OPTIMIZATION_METHOD_ORDER = (
@@ -313,4 +313,109 @@ def plot_spatial_trajectory_with_gradients(
     fig.tight_layout()
     output_path.parent.mkdir(parents=True, exist_ok=True)
     fig.savefig(output_path, dpi=200)
+    plt.close(fig)
+
+
+def plot_learning_curves(
+    episodes: list[int],
+    success_rates: list[float],
+    avg_rewards: list[float],
+    avg_objectives: list[float],
+    output_path: Path,
+    title_prefix: str = "",
+    window: int = 100,
+) -> None:
+    """Plot 3-panel learning curves: success rate, episode reward, final objective."""
+    if len(episodes) < 2:
+        return
+
+    ep = np.asarray(episodes, dtype=np.int64)
+    sr = np.asarray(success_rates, dtype=np.float64)
+    rew = np.asarray(avg_rewards, dtype=np.float64)
+    obj = np.asarray(avg_objectives, dtype=np.float64)
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 4.2))
+    fig.patch.set_facecolor("white")
+
+    panels = [
+        (sr, "Success rate", "#1a7f37", (0.0, 1.05)),
+        (rew, "Episode reward", "#0969da", None),
+        (obj, "Final objective (norm.)", "#cf222e", (0.0, 1.05)),
+    ]
+
+    for ax, (values, ylabel, color, ylim) in zip(axes, panels):
+        ax.set_facecolor("white")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#d0d7de")
+        ax.spines["bottom"].set_color("#d0d7de")
+        ax.tick_params(colors="#57606a")
+        ax.grid(True, which="major", alpha=0.22, linewidth=0.8)
+        ax.grid(True, which="minor", alpha=0.09, linewidth=0.5)
+        ax.minorticks_on()
+
+        smoothed = _trailing_running_average(values, window)
+        ax.plot(ep, values, color=color, linewidth=0.5, alpha=0.25)
+        ax.plot(ep, smoothed, color=color, linewidth=1.8, label=f"window={window}")
+        ax.set_xlabel("Episode")
+        ax.set_ylabel(ylabel)
+        if ylim is not None:
+            ax.set_ylim(*ylim)
+        ax.xaxis.set_major_locator(MaxNLocator(nbins=6, integer=True))
+        ax.legend(loc="best", frameon=False, fontsize=8)
+
+    fig.suptitle(f"{title_prefix} Learning curves" if title_prefix else "Learning curves",
+                 x=0.01, y=0.995, ha="left", va="top", fontsize=11)
+    fig.tight_layout(rect=[0.0, 0.0, 1.0, 0.95])
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=180)
+    plt.close(fig)
+
+
+def plot_cumulative_success_by_step(
+    success_steps: list[int],
+    total_episodes: int,
+    max_horizon: int,
+    output_path: Path,
+    title_prefix: str = "",
+) -> None:
+    """Plot cumulative success rate as a function of optimization step.
+
+    For each step t in [1, max_horizon], shows the fraction of all completed
+    episodes that achieved success at or before step t.
+    """
+    if total_episodes == 0:
+        return
+
+    steps_arr = np.asarray(success_steps, dtype=np.int64)
+    t = np.arange(1, max_horizon + 1)
+    cum_success = np.array(
+        [float(np.sum(steps_arr <= step)) / total_episodes for step in t]
+    )
+
+    fig, ax = plt.subplots(figsize=(7, 4))
+    ax.set_facecolor("white")
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    ax.spines["left"].set_color("#d0d7de")
+    ax.spines["bottom"].set_color("#d0d7de")
+    ax.tick_params(colors="#57606a")
+    ax.grid(True, which="major", alpha=0.22, linewidth=0.8)
+    ax.grid(True, which="minor", alpha=0.09, linewidth=0.5)
+    ax.minorticks_on()
+
+    ax.plot(t, cum_success, color="#0969da", linewidth=1.8)
+    ax.fill_between(t, 0, cum_success, color="#0969da", alpha=0.12)
+    ax.set_xlabel("Optimization step")
+    ax.set_ylabel("Cumulative success rate")
+    ax.set_xlim(1, max_horizon)
+    ax.set_ylim(0.0, 1.05)
+    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0))
+    ax.xaxis.set_major_locator(MaxNLocator(nbins=8, integer=True))
+
+    title = f"{title_prefix} Cumulative success by step" if title_prefix else "Cumulative success by step"
+    ax.set_title(title, fontsize=11, loc="left")
+    fig.tight_layout()
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    fig.savefig(output_path, dpi=180)
     plt.close(fig)

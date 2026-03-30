@@ -34,6 +34,12 @@ from .train import (
     maybe_save_trajectory_plot,
     run_training,
 )
+from ..baselines import (
+    rollout_cmaes_curve,
+    rollout_jacobian_controller_curve,
+    rollout_multistart_adam_curve,
+    rollout_multistart_gd_curve,
+)
 
 TWO_PI = 2.0 * np.pi
 
@@ -41,6 +47,10 @@ META_METHOD_ORDER = (
     "gd",
     "adam",
     "random_search",
+    "multistart_gd",
+    "multistart_adam",
+    "cmaes",
+    "jacobian_controller",
     "rl_no_oracle",
     "rl_visible_oracle",
     "rl_hidden_gradient",
@@ -50,6 +60,10 @@ METHOD_LABELS = {
     "gd": "GD",
     "adam": "Adam",
     "random_search": "Random search",
+    "multistart_gd": "Multi-start GD",
+    "multistart_adam": "Multi-start Adam",
+    "cmaes": "CMA-ES",
+    "jacobian_controller": "Jacobian controller",
     "rl_no_oracle": "RL no oracle",
     "rl_visible_oracle": "RL visible oracle",
     "rl_hidden_gradient": "RL hidden gradient",
@@ -233,6 +247,7 @@ def _evaluate_seed(
 
     method_curves: dict[str, list[np.ndarray]] = {method: [] for method in META_METHOD_ORDER}
     random_rng = np.random.default_rng(int(seed) + 50_003)
+    multistart_rng = np.random.default_rng(int(seed) + 70_031)
 
     for _ in range(max(1, int(num_tasks))):
         # Sample a random starting point on the torus
@@ -269,6 +284,59 @@ def _evaluate_seed(
             env_index=0,
         )
         method_curves["random_search"].append(random_search_curve)
+
+        # Multi-start GD (5 restarts)
+        multistart_gd_curve = rollout_multistart_gd_curve(
+            grad_fn=lambda x: hidden_env._gradient_xy(x, env_index=0),
+            obj_fn=lambda x: hidden_env._normalized_objective_value(x, env_index=0),
+            clip_fn=lambda x: (x % TWO_PI).astype(np.float32),
+            start_xy=start_xy,
+            horizon=horizon,
+            base_lr=hidden_env.baseline_lr_gd,
+            n_restarts=5,
+            rng=multistart_rng,
+            domain_low=0.0,
+            domain_high=TWO_PI,
+        )
+        method_curves["multistart_gd"].append(multistart_gd_curve)
+
+        # Multi-start Adam (5 restarts)
+        multistart_adam_curve = rollout_multistart_adam_curve(
+            grad_fn=lambda x: hidden_env._gradient_xy(x, env_index=0),
+            obj_fn=lambda x: hidden_env._normalized_objective_value(x, env_index=0),
+            clip_fn=lambda x: (x % TWO_PI).astype(np.float32),
+            start_xy=start_xy,
+            horizon=horizon,
+            base_lr=hidden_env.baseline_lr_adam,
+            n_restarts=5,
+            rng=multistart_rng,
+            domain_low=0.0,
+            domain_high=TWO_PI,
+        )
+        method_curves["multistart_adam"].append(multistart_adam_curve)
+
+        # CMA-ES
+        cmaes_curve = rollout_cmaes_curve(
+            obj_fn=lambda x: hidden_env._normalized_objective_value(x, env_index=0),
+            start_xy=start_xy,
+            horizon=horizon,
+            bounds_low=0.0,
+            bounds_high=TWO_PI,
+            sigma0=1.0,
+        )
+        method_curves["cmaes"].append(cmaes_curve)
+
+        # Jacobian controller (uses hidden gradient + Jacobian, no RL)
+        jacobian_curve = rollout_jacobian_controller_curve(
+            hidden_grad_fn=lambda x: hidden_env._gradient_hidden(x, env_index=0),
+            jacobian_fn=lambda x: hidden_env._jacobian(x, env_index=0),
+            obj_fn=lambda x: hidden_env._normalized_objective_value(x, env_index=0),
+            clip_fn=lambda x: (x % TWO_PI).astype(np.float32),
+            start_xy=start_xy,
+            horizon=horizon,
+            base_lr=hidden_env.baseline_lr_gd,
+        )
+        method_curves["jacobian_controller"].append(jacobian_curve)
 
         # Hidden gradient RL
         hidden_curve = _rollout_policy_curve(

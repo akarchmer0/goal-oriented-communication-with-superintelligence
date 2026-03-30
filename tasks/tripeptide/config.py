@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 from pathlib import Path
 
+from .lifting_map import LiftingMap
+
 
 @dataclass
 class TrainConfig:
@@ -62,23 +64,13 @@ class TrainConfig:
     run_name: str = ""
     device: str = "cpu"
     use_simple_s_star: bool = False
-    enable_training_plots: bool = True
     lattice_rl: bool = False
     lattice_granularity: int = 20
-    learned_lift: bool = False
-    learned_lift_D: int = 64
-    learned_lift_encoder_hidden: str = "256,256"
-    learned_lift_decoder_hidden: str = "256,256"
-    learned_lift_n_train: int = 100_000
-    learned_lift_n_epochs: int = 800
-    learned_lift_lr: float = 1e-3
+    enable_training_plots: bool = True
 
     @property
     def spatial_hidden_dim(self) -> int:
         """Hidden dim = D of the lifting map."""
-        if self.learned_lift:
-            return self.learned_lift_D
-        from .lifting_map import LiftingMap
         lm = LiftingMap(d=self.visible_dim, K_map=self.K_map)
         return lm.D
 
@@ -92,7 +84,7 @@ class TrainConfig:
     def resolve_run_dir(self) -> Path:
         base = Path(self.logdir)
         default_run_name = (
-            f"tripeptide_Kmap{self.K_map}_Krelax{self.K_relax}_"
+            f"tripeptide_Kmap{self.K_map}_Krelax{self.K_relax}_D{self.spatial_hidden_dim}_"
             f"{self.oracle_mode}_{self.sensing}_seed{self.seed}"
         )
         run_name = self.run_name or default_run_name

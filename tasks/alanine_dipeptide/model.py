@@ -13,6 +13,8 @@ class PolicyValueNet(nn.Module):
         architecture: str = "mlp",
         action_space_type: str = "discrete",
         continuous_init_std: float = 0.4,
+        periodic_pair_count: int = 0,
+        periodic_pair_embed_dim: int = 0,
     ):
         super().__init__()
         if architecture not in {"mlp", "gru"}:
@@ -30,6 +32,17 @@ class PolicyValueNet(nn.Module):
         self.oracle_token_dim = int(oracle_token_dim)
         self.extra_token_feature_dim = int(token_feature_dim - oracle_token_dim)
         self.oracle_proj_dim = int(max(0, oracle_proj_dim))
+        self.periodic_pair_count = int(max(0, periodic_pair_count))
+        self.periodic_pair_embed_dim = int(max(0, periodic_pair_embed_dim))
+        max_periodic_feature_dim = 2 * self.periodic_pair_count
+        if max_periodic_feature_dim > self.extra_token_feature_dim:
+            raise ValueError(
+                "periodic_pair_count consumes more features than available after the oracle token"
+            )
+        if self.periodic_pair_count > 0 and self.periodic_pair_embed_dim <= 0:
+            raise ValueError(
+                "periodic_pair_embed_dim must be > 0 when periodic_pair_count > 0"
+            )
 
         projected_token_dim = int(self.oracle_token_dim)
         if self.oracle_token_dim > 0 and self.oracle_proj_dim > 0:
@@ -42,7 +55,22 @@ class PolicyValueNet(nn.Module):
         else:
             self.oracle_projector = None
 
-        feature_dim = projected_token_dim + self.extra_token_feature_dim + 2
+        self.non_periodic_extra_dim = int(
+            self.extra_token_feature_dim - (2 * self.periodic_pair_count)
+        )
+        if self.periodic_pair_count > 0:
+            self.periodic_stem = nn.Sequential(
+                nn.Linear(2, self.periodic_pair_embed_dim),
+                nn.Tanh(),
+                nn.Linear(self.periodic_pair_embed_dim, self.periodic_pair_embed_dim),
+                nn.Tanh(),
+            )
+            periodic_feature_dim = self.periodic_pair_count * self.periodic_pair_embed_dim
+        else:
+            self.periodic_stem = None
+            periodic_feature_dim = 0
+
+        feature_dim = projected_token_dim + self.non_periodic_extra_dim + periodic_feature_dim + 2
         if architecture == "mlp":
             self.backbone = nn.Sequential(
                 nn.Linear(feature_dim, hidden_dim),
@@ -89,8 +117,22 @@ class PolicyValueNet(nn.Module):
         else:
             encoded_token = oracle_token
 
+        if self.periodic_pair_count > 0:
+            non_periodic_extra = extra_features[..., : self.non_periodic_extra_dim]
+            periodic_features = extra_features[..., self.non_periodic_extra_dim :]
+            periodic_pairs = periodic_features.reshape(
+                *periodic_features.shape[:-1], self.periodic_pair_count, 2
+            )
+            encoded_periodic = self.periodic_stem(periodic_pairs).reshape(
+                *periodic_features.shape[:-1],
+                self.periodic_pair_count * self.periodic_pair_embed_dim,
+            )
+            encoded_extra = torch.cat([non_periodic_extra, encoded_periodic], dim=-1)
+        else:
+            encoded_extra = extra_features
+
         features = torch.cat(
-            [encoded_token, extra_features, dist_feature.unsqueeze(-1), step_fraction.unsqueeze(-1)],
+            [encoded_token, encoded_extra, dist_feature.unsqueeze(-1), step_fraction.unsqueeze(-1)],
             dim=-1,
         )
         if self.architecture == "mlp":

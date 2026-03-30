@@ -113,6 +113,7 @@ class VectorizedAlanineEnv:
         self.horizons = np.ones(self.n_env, dtype=np.int32)
         self.initial_dist = np.ones(self.n_env, dtype=np.int32)
         self.initial_objective = np.ones(self.n_env, dtype=np.float32)
+        self.torus_offset = np.zeros((self.n_env, self.visible_dim), dtype=np.float32)
         self.completed_episodes = 0
 
         self.f_type = "FOURIER"
@@ -124,11 +125,15 @@ class VectorizedAlanineEnv:
     # Lifting map and gradient helpers
     # ------------------------------------------------------------------
 
+    def _to_true_coords(self, z: np.ndarray, env_index: int) -> np.ndarray:
+        """Map agent-frame coordinates to true (unrotated) coordinates."""
+        return self._wrap_to_torus(z + self.torus_offset[int(env_index)])
+
     def _hidden_from_z(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
-        return self.lifting_map.eval(z)
+        return self.lifting_map.eval(self._to_true_coords(z, env_index))
 
     def _jacobian(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
-        return self.lifting_map.jacobian(z)
+        return self.lifting_map.jacobian(self._to_true_coords(z, env_index))
 
     def _gradient_hidden(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
         """Hidden gradient: F(z) - s*_SDP."""
@@ -138,7 +143,7 @@ class VectorizedAlanineEnv:
 
     def _gradient_xy(self, z: np.ndarray, env_index: int = 0) -> np.ndarray:
         """True energy gradient in visible (torus) space — for baselines."""
-        grad = self.energy_surface.gradient(z)
+        grad = self.energy_surface.gradient(self._to_true_coords(z, env_index))
         return np.asarray(grad, dtype=np.float32)
 
     # ------------------------------------------------------------------
@@ -156,13 +161,13 @@ class VectorizedAlanineEnv:
     # Energy-based objective (used for reward and success)
     # ------------------------------------------------------------------
 
-    def _energy_value(self, z: np.ndarray) -> float:
+    def _energy_value(self, z: np.ndarray, env_index: int = 0) -> float:
         """Actual energy E(z) on the torus."""
-        return float(self.energy_surface.energy(z))
+        return float(self.energy_surface.energy(self._to_true_coords(z, env_index)))
 
     def _objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
         """Objective is actual energy E(z)."""
-        return self._energy_value(z)
+        return self._energy_value(z, env_index=env_index)
 
     def _set_max_objective(self, value: float, env_index: int = 0) -> None:
         idx = int(env_index)
@@ -191,7 +196,7 @@ class VectorizedAlanineEnv:
         return float(np.clip((float(energy) - self.global_min_energy) / scale, 0.0, 1.0))
 
     def _normalized_objective_value(self, z: np.ndarray, env_index: int = 0) -> float:
-        raw = self._energy_value(z)
+        raw = self._energy_value(z, env_index=env_index)
         return self._normalized_objective_from_raw(raw, env_index=env_index)
 
     def _is_success(self, z: np.ndarray, env_index: int = 0) -> bool:
@@ -234,7 +239,7 @@ class VectorizedAlanineEnv:
         token_features = self._get_token_features()
         energy_vals = np.asarray(
             [
-                self._energy_value(self.current_xy[idx])
+                self._energy_value(self.current_xy[idx], env_index=idx)
                 for idx in range(self.n_env)
             ],
             dtype=np.float32,
@@ -360,13 +365,19 @@ class VectorizedAlanineEnv:
 
     def sample_episode_spec(self, env_index: int = 0, refresh_map: bool = False) -> AlanineEpisodeSpec:
         idx = int(env_index)
-        target_min = self.reference_min_xy.copy()
+
+        # Random torus rotation so the policy cannot memorize positions
+        offset = self.rng.uniform(low=0.0, high=TWO_PI, size=self.visible_dim).astype(np.float32)
+        self.torus_offset[idx] = offset
+
+        # Reference minimum in the agent's (rotated) frame
+        target_min = self._wrap_to_torus(self.reference_min_xy - offset)
         source = self._sample_xy()
 
         self.reference_min_xy_env[idx] = target_min
         self.s_star[idx] = self.s_star_sdp.copy()
 
-        initial_objective = self._energy_value(source)
+        initial_objective = self._energy_value(source, env_index=idx)
         diff = source.astype(np.float64) - target_min.astype(np.float64)
         diff = (diff + np.pi) % TWO_PI - np.pi
         shortest_dist = int(np.ceil(np.linalg.norm(diff, ord=1) / self.step_size))
@@ -414,7 +425,61 @@ class VectorizedAlanineEnv:
         env_index: int = 0,
         base_lr: float | None = None,
     ) -> tuple[float, float]:
+        state, _ = self._rollout_adam_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=base_lr,
+        )
+        final_objective = self._energy_value(state, env_index=env_index)
+        final_ref_distance = self._reference_distance(state, env_index=env_index)
+        return final_objective, final_ref_distance
+
+    def _rollout_descent_baseline_final_stats(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> tuple[float, float]:
+        state, _ = self._rollout_descent_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=base_lr,
+        )
+        final_objective = self._energy_value(state, env_index=env_index)
+        final_ref_distance = self._reference_distance(state, env_index=env_index)
+        return final_objective, final_ref_distance
+
+    def _rollout_descent_baseline_trace(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
         state = start_xy.astype(np.float32).copy()
+        energy_trace: list[float] = []
+        for step in range(int(horizon)):
+            grad_xy = self._gradient_xy(state, env_index=env_index)
+            lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=base_lr)
+            update = (-lr_t * grad_xy).astype(np.float32)
+            state = self._apply_baseline_optimizer_step(state, update)
+            energy_trace.append(float(self._energy_value(state, env_index=env_index)))
+            if self._is_success(state, env_index=env_index):
+                break
+        return state, np.asarray(energy_trace, dtype=np.float32)
+
+    def _rollout_adam_baseline_trace(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        state = start_xy.astype(np.float32).copy()
+        energy_trace: list[float] = []
         d = self.visible_dim
         m = np.zeros(d, dtype=np.float64)
         v = np.zeros(d, dtype=np.float64)
@@ -432,30 +497,40 @@ class VectorizedAlanineEnv:
             lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=lr0)
             adam_update = (-lr_t * (m_hat / (np.sqrt(v_hat) + eps))).astype(np.float32)
             state = self._apply_baseline_optimizer_step(state, adam_update)
+            energy_trace.append(float(self._energy_value(state, env_index=env_index)))
             if self._is_success(state, env_index=env_index):
                 break
-        final_objective = self._energy_value(state)
-        final_ref_distance = self._reference_distance(state, env_index=env_index)
-        return final_objective, final_ref_distance
+        return state, np.asarray(energy_trace, dtype=np.float32)
 
-    def _rollout_descent_baseline_final_stats(
+    def rollout_baseline_energy_trace(
         self,
         start_xy: np.ndarray,
         horizon: int,
         env_index: int = 0,
         base_lr: float | None = None,
-    ) -> tuple[float, float]:
-        state = start_xy.astype(np.float32).copy()
-        for step in range(int(horizon)):
-            grad_xy = self._gradient_xy(state, env_index=env_index)
-            lr_t = self._cosine_annealed_baseline_lr(step, int(horizon), base_lr=base_lr)
-            update = (-lr_t * grad_xy).astype(np.float32)
-            state = self._apply_baseline_optimizer_step(state, update)
-            if self._is_success(state, env_index=env_index):
-                break
-        final_objective = self._energy_value(state)
-        final_ref_distance = self._reference_distance(state, env_index=env_index)
-        return final_objective, final_ref_distance
+    ) -> np.ndarray:
+        _, trace = self._rollout_descent_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=(self.baseline_lr_gd if base_lr is None else float(base_lr)),
+        )
+        return trace
+
+    def rollout_adam_baseline_energy_trace(
+        self,
+        start_xy: np.ndarray,
+        horizon: int,
+        env_index: int = 0,
+        base_lr: float | None = None,
+    ) -> np.ndarray:
+        _, trace = self._rollout_adam_baseline_trace(
+            start_xy=start_xy,
+            horizon=horizon,
+            env_index=env_index,
+            base_lr=base_lr,
+        )
+        return trace
 
     def rollout_baseline_final_objective(
         self,
@@ -483,8 +558,9 @@ class VectorizedAlanineEnv:
         energy_grid = np.zeros_like(phi_grid)
         for i in range(res):
             for j in range(res):
-                z = np.array([phi_grid[i, j], psi_grid[i, j]], dtype=np.float64)
-                energy_grid[i, j] = self.energy_surface.energy(z)
+                z = np.array([phi_grid[i, j], psi_grid[i, j]], dtype=np.float32)
+                z_true = self._to_true_coords(z, env_index)
+                energy_grid[i, j] = self.energy_surface.energy(z_true)
         return (
             phi_grid.astype(np.float32),
             psi_grid.astype(np.float32),
@@ -514,17 +590,23 @@ class VectorizedAlanineEnv:
 
         for env_index in range(self.n_env):
             z_old = self.current_xy[env_index]
-            energy_old = self._energy_value(z_old)
+            energy_old = self._energy_value(z_old, env_index=env_index)
 
             action = action_vectors[env_index]
             z_new = self._apply_action(z_old, action)
             self.current_xy[env_index] = z_new
             self.steps[env_index] += 1
 
-            energy_new = self._energy_value(z_new)
+            energy_new = self._energy_value(z_new, env_index=env_index)
             success = self._is_success(z_new, env_index=env_index)
             timeout = int(self.steps[env_index]) >= int(self.horizons[env_index])
             episode_done = bool(success or timeout)
+            info = {
+                "episode_done": False,
+                "success": bool(success),
+                "energy_raw": float(energy_new),
+                "energy": self._normalized_objective_from_raw(float(energy_new), env_index=env_index),
+            }
 
             # Reward = energy progress (positive when energy decreases)
             if self.sensing == "S0":
@@ -560,9 +642,9 @@ class VectorizedAlanineEnv:
                             env_index=env_index,
                         )
                     )
-                info = {
+                info.update({
                     "episode_done": True,
-                    "success": success,
+                    "success": bool(success),
                     "episode_len": episode_len,
                     "shortest_dist": shortest_dist,
                     "initial_objective": self._normalized_objective_from_raw(
@@ -584,11 +666,13 @@ class VectorizedAlanineEnv:
                     ),
                     "adam_baseline_final_objective_raw": float(adam_baseline_final_objective),
                     "adam_baseline_final_ref_distance": float(adam_baseline_final_ref_distance),
-                }
+                })
                 if success and shortest_dist > 0:
                     info["stretch"] = float(episode_len / shortest_dist)
                 infos[env_index] = info
                 self._reset_env(env_index)
+            else:
+                infos[env_index] = info
 
         next_obs = self.get_obs()
         return next_obs, rewards, dones, infos

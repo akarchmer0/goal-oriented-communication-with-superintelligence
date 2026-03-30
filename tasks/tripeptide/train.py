@@ -14,11 +14,12 @@ from tqdm import tqdm
 from .config import TrainConfig
 from .energy import load_energy_surface
 from .env import VectorizedTripeptideEnv
-from .learned_lift import LearnedLiftOracle
 from .lifting_map import LiftingMap
 from .model import PolicyValueNet
 from .oracle import ORACLE_MODES, SpatialOracle
 from .plotting import (
+    plot_cumulative_success_by_step,
+    plot_learning_curves,
     plot_path_length_histograms,
     plot_spatial_optimization_curve_summary,
     plot_spatial_optimization_curves_by_method,
@@ -831,7 +832,7 @@ def _build_lr_scheduler(
 
 
 # ---------------------------------------------------------------------------
-# Synchronize envs (no torus_offset since tripeptide doesn't use torus rotation)
+# Synchronize envs
 # ---------------------------------------------------------------------------
 
 def _synchronize_envs(
@@ -848,6 +849,7 @@ def _synchronize_envs(
     target_env.horizons[:] = reference_env.horizons.astype(np.int32)
     target_env.initial_dist[:] = reference_env.initial_dist.astype(np.int32)
     target_env.initial_objective[:] = reference_env.initial_objective.astype(np.float32)
+    target_env.torus_offset[:] = reference_env.torus_offset.astype(np.float32)
     target_env.completed_episodes = int(reference_env.completed_episodes)
     target_env.success_threshold = float(reference_env.success_threshold)
     target_env.s_star[:] = reference_env.s_star.astype(np.float32)
@@ -902,52 +904,26 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         seed=config.seed,
     )
 
-    learned_lift_oracle: LearnedLiftOracle | None = None
+    lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
 
-    if config.learned_lift:
-        # --- Learned lifting map: encoder F + ICNN decoder G -----------------
-        D = config.learned_lift_D
-        enc_hidden = [int(x) for x in config.learned_lift_encoder_hidden.split(",") if x.strip()]
-        dec_hidden = [int(x) for x in config.learned_lift_decoder_hidden.split(",") if x.strip()]
-        print(f"  Training learned lift: D={D}, encoder={enc_hidden}, decoder={dec_hidden}")
-        learned_lift_oracle = LearnedLiftOracle.train_from_energy_surface(
-            energy_surface=energy_surface,
-            d=energy_surface.d,
-            D=D,
-            encoder_hidden_dims=tuple(enc_hidden),
-            decoder_hidden_dims=tuple(dec_hidden),
-            n_train=config.learned_lift_n_train,
-            n_epochs=config.learned_lift_n_epochs,
-            lr=config.learned_lift_lr,
-            seed=config.seed + 7,
-        )
-        # Use a dummy Fourier lifting map for baseline gradient computations;
-        # the RL agent uses the learned oracle instead.
-        lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
-        hidden_dim = D
-        s_star_sdp = learned_lift_oracle.s_star
-        sdp_bound = float("nan")
-        sdp_status = "learned_lift"
+    if config.use_simple_s_star:
+        # Norm-ball oracle: s* = -R * c / ||c||
+        # R = sqrt(N_freq) since ||F(z)||^2 = N_freq for any z on the torus
+        c_vec = lifting_map.energy_as_linear(energy_surface)
+        c_norm = float(np.linalg.norm(c_vec))
+        R = float(np.sqrt(lifting_map.N_freq))
+        s_star_sdp = (-R * c_vec / max(c_norm, 1e-12)).astype(np.float32)
+        sdp_bound = float(np.dot(c_vec, s_star_sdp.astype(np.float64)) + energy_surface.c0)
+        sdp_status = "simple_norm_ball"
+        print(f"  Using simple norm-ball oracle: R={R:.2f}, ||c||={c_norm:.4f}")
+        print(f"  Norm-ball energy bound: {sdp_bound:.4f}")
+        validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
     else:
-        lifting_map = LiftingMap(d=energy_surface.d, K_map=config.K_map)
-        if config.use_simple_s_star:
-            # Norm-ball oracle: s* = -R * c / ||c||
-            # R = sqrt(N_freq) since ||F(z)||^2 = N_freq for any z on the torus
-            c_vec = lifting_map.energy_as_linear(energy_surface)
-            c_norm = float(np.linalg.norm(c_vec))
-            R = float(np.sqrt(lifting_map.N_freq))
-            s_star_sdp = (-R * c_vec / max(c_norm, 1e-12)).astype(np.float32)
-            sdp_bound = float(np.dot(c_vec, s_star_sdp.astype(np.float64)) + energy_surface.c0)
-            sdp_status = "simple_norm_ball"
-            print(f"  Using simple norm-ball oracle: R={R:.2f}, ||c||={c_norm:.4f}")
-            print(f"  Norm-ball energy bound: {sdp_bound:.4f}")
-            validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
-        else:
-            s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
-                lifting_map, energy_surface, K_relax=config.K_relax
-            )
-            validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
-        hidden_dim = lifting_map.D
+        s_star_sdp, sdp_bound, sdp_status = solve_sdp_oracle(
+            lifting_map, energy_surface, K_relax=config.K_relax
+        )
+        validate_sdp_solution(s_star_sdp, lifting_map, energy_surface)
+    hidden_dim = lifting_map.D
 
     token_dim = config.spatial_token_dim
 
@@ -971,11 +947,10 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         reward_noise_std=config.reward_noise_std,
         step_size=config.step_size,
         ppo_step_scale=config.ppo_step_scale,
-        success_threshold=config.success_threshold,
-        compute_episode_baselines=config.enable_baselines,
         lattice_rl=config.lattice_rl,
         lattice_granularity=config.lattice_granularity,
-        learned_lift_oracle=learned_lift_oracle,
+        success_threshold=config.success_threshold,
+        compute_episode_baselines=config.enable_baselines,
     )
     action_dim = env.action_dim
     action_space_type = "discrete" if config.lattice_rl else "continuous"
@@ -1005,10 +980,10 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
             sensing=config.sensing, max_horizon=config.max_horizon,
             seed=config.seed + 149, s1_step_penalty=config.s1_step_penalty,
             reward_noise_std=config.reward_noise_std, step_size=config.step_size,
-            ppo_step_scale=config.ppo_step_scale, success_threshold=config.success_threshold,
-            compute_episode_baselines=config.enable_baselines,
+            ppo_step_scale=config.ppo_step_scale,
             lattice_rl=config.lattice_rl, lattice_granularity=config.lattice_granularity,
-            learned_lift_oracle=learned_lift_oracle,
+            success_threshold=config.success_threshold,
+            compute_episode_baselines=config.enable_baselines,
         )
         if config.oracle_mode == "convex_gradient":
             visible_gradient_oracle = SpatialOracle(
@@ -1021,10 +996,10 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                 sensing=config.sensing, max_horizon=config.max_horizon,
                 seed=config.seed + 173, s1_step_penalty=config.s1_step_penalty,
                 reward_noise_std=config.reward_noise_std, step_size=config.step_size,
-                ppo_step_scale=config.ppo_step_scale, success_threshold=config.success_threshold,
-                compute_episode_baselines=config.enable_baselines,
+                ppo_step_scale=config.ppo_step_scale,
                 lattice_rl=config.lattice_rl, lattice_granularity=config.lattice_granularity,
-                learned_lift_oracle=learned_lift_oracle,
+                success_threshold=config.success_threshold,
+                compute_episode_baselines=config.enable_baselines,
             )
         if no_oracle_env is not None:
             _synchronize_envs(env, no_oracle_env)
@@ -1142,6 +1117,10 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         visible_gradient_reward_returns = np.zeros(config.n_env, dtype=np.float64)
 
     curve_metrics: list[dict] = []
+    lc_episodes: list[int] = []
+    lc_success_rates: list[float] = []
+    lc_avg_rewards: list[float] = []
+    lc_avg_objectives: list[float] = []
     save_metrics_interval = int(config.save_metrics_interval_episodes)
     save_every_episode = save_metrics_interval <= 0
     last_row: dict[str, float | int] | None = None
@@ -1157,6 +1136,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         "no_oracle_final_objective", "avg_no_oracle_final_objective",
         "visible_gradient_final_objective", "avg_visible_gradient_final_objective",
         "final_ref_distance", "avg_final_ref_distance",
+        "avg_episode_reward",
         "avg_path_len", "avg_shortest_dist", "avg_stretch",
         "window_size", "policy_loss", "value_loss", "entropy", "lr",
     ]
@@ -1175,8 +1155,11 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
     recent_no_oracle_final_objective: deque[float] = deque(maxlen=config.running_avg_window)
     recent_visible_gradient_final_objective: deque[float] = deque(maxlen=config.running_avg_window)
     recent_final_ref_distance: deque[float] = deque(maxlen=config.running_avg_window)
+    recent_episode_reward: deque[float] = deque(maxlen=config.running_avg_window)
+    episode_reward_accum = np.zeros(config.n_env, dtype=np.float64)
     all_path_lengths: list[float] = []
     all_shortest_dists: list[float] = []
+    success_steps: list[int] = []
     success_path_lengths: list[float] = []
     failure_path_lengths: list[float] = []
 
@@ -1215,6 +1198,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     recurrent_state_np = recurrent_state.cpu().numpy()
 
                 next_obs, rewards, dones, infos = env.step(actions)
+                episode_reward_accum += rewards.astype(np.float64)
                 normalized_rewards, reward_returns = normalize_rewards_with_running_returns(
                     rewards=rewards, dones=dones, returns_tracker=reward_returns,
                     returns_rms=reward_returns_rms, gamma=config.gamma, clip_abs=reward_norm_clip,
@@ -1322,6 +1306,8 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     adam_fo = float(info.get("adam_baseline_final_objective", float("nan")))
                     final_ref_distance = float(info.get("final_ref_distance", float("nan")))
 
+                    recent_episode_reward.append(float(episode_reward_accum[int(env_index)]))
+                    episode_reward_accum[int(env_index)] = 0.0
                     recent_success.append(success)
                     if env.compute_episode_baselines:
                         bl_succ = 1.0 if np.isfinite(baseline_fo) and baseline_fo <= env.success_threshold else 0.0
@@ -1342,6 +1328,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     all_shortest_dists.append(shortest_dist)
                     if success >= 0.5:
                         success_path_lengths.append(episode_len)
+                        success_steps.append(int(episode_len))
                     else:
                         failure_path_lengths.append(episode_len)
                     if "stretch" in info:
@@ -1368,6 +1355,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                         "avg_visible_gradient_final_objective": float(np.mean(recent_visible_gradient_final_objective)) if recent_visible_gradient_final_objective else float("nan"),
                         "final_ref_distance": float(final_ref_distance),
                         "avg_final_ref_distance": float(np.mean(recent_final_ref_distance)) if recent_final_ref_distance else float("nan"),
+                        "avg_episode_reward": float(np.mean(recent_episode_reward)) if recent_episode_reward else float("nan"),
                         "avg_path_len": float(np.mean(recent_path_len)),
                         "avg_shortest_dist": float(np.mean(recent_shortest_dist)),
                         "avg_stretch": float(np.mean(recent_stretch)) if recent_stretch else float("nan"),
@@ -1389,6 +1377,11 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                             "success_rate": float(row["success_rate"]),
                             "avg_final_objective": float(row["avg_final_objective"]),
                         })
+
+                    lc_episodes.append(int(total_episodes))
+                    lc_success_rates.append(float(row["success_rate"]))
+                    lc_avg_rewards.append(float(row["avg_episode_reward"]))
+                    lc_avg_objectives.append(float(row["avg_final_objective"]))
 
                     writer.writerow(row)
                     csv_file.flush()
@@ -1458,6 +1451,22 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
             success_path_lengths=success_path_lengths,
             failure_path_lengths=failure_path_lengths,
             output_dir=run_dir,
+            title_prefix=f"Tripeptide K_map={config.K_map}, {config.oracle_mode}, {config.sensing}",
+        )
+        plot_learning_curves(
+            episodes=lc_episodes,
+            success_rates=lc_success_rates,
+            avg_rewards=lc_avg_rewards,
+            avg_objectives=lc_avg_objectives,
+            output_path=run_dir / "learning_curves.png",
+            title_prefix=f"Tripeptide K_map={config.K_map}, {config.oracle_mode}, {config.sensing}",
+            window=config.running_avg_window,
+        )
+        plot_cumulative_success_by_step(
+            success_steps=success_steps,
+            total_episodes=total_episodes,
+            max_horizon=config.max_horizon,
+            output_path=run_dir / "cumulative_success_by_step.png",
             title_prefix=f"Tripeptide K_map={config.K_map}, {config.oracle_mode}, {config.sensing}",
         )
         maybe_save_trajectory_plot(
@@ -1584,33 +1593,10 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
     parser.add_argument("--disable_training_plots", action="store_true")
     parser.add_argument("--simple_s_star", action="store_true",
                         help="Use norm-ball oracle s*=-R*c/||c|| instead of SDP relaxation.")
-    parser.add_argument(
-        "--lattice_RL",
-        action="store_true",
-        help="Enable lattice-grid discrete PPO: the RL agent selects among moves to adjacent lattice nodes.",
-    )
-    parser.add_argument(
-        "--lattice_granularity",
-        type=int,
-        default=defaults.lattice_granularity,
-        help="Number of lattice nodes per dimension of feasible space (default: 20).",
-    )
-    parser.add_argument(
-        "--learned_lift",
-        action="store_true",
-        help="Use a learned encoder (MLP) + decoder (ICNN) instead of Fourier lifting map + SDP.",
-    )
-    parser.add_argument("--learned_lift_D", type=int, default=defaults.learned_lift_D,
-                        help="Hidden dimension D for the learned lifting map.")
-    parser.add_argument("--learned_lift_encoder_hidden", type=str,
-                        default=defaults.learned_lift_encoder_hidden,
-                        help="Comma-separated encoder hidden layer sizes.")
-    parser.add_argument("--learned_lift_decoder_hidden", type=str,
-                        default=defaults.learned_lift_decoder_hidden,
-                        help="Comma-separated ICNN decoder hidden layer sizes.")
-    parser.add_argument("--learned_lift_n_train", type=int, default=defaults.learned_lift_n_train)
-    parser.add_argument("--learned_lift_n_epochs", type=int, default=defaults.learned_lift_n_epochs)
-    parser.add_argument("--learned_lift_lr", type=float, default=defaults.learned_lift_lr)
+    parser.add_argument("--lattice_RL", action="store_true",
+                        help="Enable lattice-grid discrete PPO: the RL agent selects among moves to adjacent lattice nodes.")
+    parser.add_argument("--lattice_granularity", type=int, default=defaults.lattice_granularity,
+                        help="Number of lattice nodes per dimension (default: 20).")
 
     args = parser.parse_args()
     seed_values = _parse_seed_values(args.seed)
@@ -1665,13 +1651,6 @@ def parse_args() -> tuple[TrainConfig, list[int]]:
         use_simple_s_star=args.simple_s_star,
         lattice_rl=args.lattice_RL,
         lattice_granularity=args.lattice_granularity,
-        learned_lift=args.learned_lift,
-        learned_lift_D=args.learned_lift_D,
-        learned_lift_encoder_hidden=args.learned_lift_encoder_hidden,
-        learned_lift_decoder_hidden=args.learned_lift_decoder_hidden,
-        learned_lift_n_train=args.learned_lift_n_train,
-        learned_lift_n_epochs=args.learned_lift_n_epochs,
-        learned_lift_lr=args.learned_lift_lr,
     )
     return config, seed_values
 

@@ -18,6 +18,8 @@ from .lifting_map import LiftingMap
 from .model import PolicyValueNet
 from .oracle import ORACLE_MODES, SpatialOracle
 from .plotting import (
+    plot_cumulative_success_by_step,
+    plot_learning_curves,
     plot_path_length_histograms,
     plot_spatial_optimization_curve_summary,
     plot_spatial_optimization_curves_by_method,
@@ -106,6 +108,74 @@ OPTIMIZATION_METHOD_LABELS = {
     "rl_visible_oracle": "RL visible oracle",
     "rl_hidden_gradient": "RL hidden gradient",
 }
+ENERGY_TRACE_METHOD_ORDER = [
+    "gd",
+    "adam",
+    "rl_no_oracle",
+    "rl_visible_oracle",
+    "rl_hidden_gradient",
+]
+
+
+def _init_energy_evaluation_trace(method_label: str) -> dict[str, object]:
+    return {
+        "label": str(method_label),
+        "evaluations": [],
+        "running_best_energy": [],
+        "total_evaluations": 0,
+        "best_energy": float("inf"),
+    }
+
+
+def _append_energy_evaluation_trace(
+    trace: dict[str, object],
+    energies: np.ndarray | list[float],
+) -> None:
+    arr = np.asarray(energies, dtype=np.float64).reshape(-1)
+    if arr.size == 0:
+        return
+    evals = trace["evaluations"]
+    bests = trace["running_best_energy"]
+    total_evaluations = int(trace["total_evaluations"])
+    best_energy = float(trace["best_energy"])
+    for energy in arr:
+        if not np.isfinite(float(energy)):
+            continue
+        total_evaluations += 1
+        if float(energy) < best_energy:
+            best_energy = float(energy)
+        evals.append(int(total_evaluations))
+        bests.append(float(best_energy))
+    trace["total_evaluations"] = int(total_evaluations)
+    trace["best_energy"] = float(best_energy)
+
+
+def _serialize_energy_evaluation_traces(
+    traces_by_method: dict[str, dict[str, object]],
+    *,
+    global_min_energy: float,
+) -> dict[str, object]:
+    methods_payload: dict[str, object] = {}
+    for method_key in ENERGY_TRACE_METHOD_ORDER:
+        trace = traces_by_method.get(method_key)
+        if trace is None:
+            continue
+        best_energy = float(trace.get("best_energy", float("inf")))
+        methods_payload[method_key] = {
+            "label": str(trace.get("label", OPTIMIZATION_METHOD_LABELS.get(method_key, method_key))),
+            "evaluations": [int(v) for v in trace.get("evaluations", [])],
+            "running_best_energy": [float(v) for v in trace.get("running_best_energy", [])],
+            "total_evaluations": int(trace.get("total_evaluations", 0)),
+            "best_energy": (float(best_energy) if np.isfinite(best_energy) else None),
+        }
+    return {
+        "method_order": [
+            method_key for method_key in ENERGY_TRACE_METHOD_ORDER if method_key in methods_payload
+        ],
+        "energy_units": "kJ/mol",
+        "global_min_energy": float(global_min_energy),
+        "methods": methods_payload,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -848,6 +918,7 @@ def _synchronize_envs(
     target_env.horizons[:] = reference_env.horizons.astype(np.int32)
     target_env.initial_dist[:] = reference_env.initial_dist.astype(np.int32)
     target_env.initial_objective[:] = reference_env.initial_objective.astype(np.float32)
+    target_env.torus_offset[:] = reference_env.torus_offset.astype(np.float32)
     target_env.completed_episodes = int(reference_env.completed_episodes)
     target_env.success_threshold = float(reference_env.success_threshold)
     target_env.reference_min_xy_env[:] = reference_env.reference_min_xy_env.astype(np.float32)
@@ -1179,6 +1250,10 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         visible_gradient_reward_returns = np.zeros(config.n_env, dtype=np.float64)
 
     curve_metrics: list[dict] = []
+    lc_episodes: list[int] = []
+    lc_success_rates: list[float] = []
+    lc_avg_rewards: list[float] = []
+    lc_avg_objectives: list[float] = []
     save_metrics_interval = int(config.save_metrics_interval_episodes)
     save_every_episode = save_metrics_interval <= 0
     last_row: dict[str, float | int] | None = None
@@ -1194,6 +1269,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         "no_oracle_final_objective", "avg_no_oracle_final_objective",
         "visible_gradient_final_objective", "avg_visible_gradient_final_objective",
         "final_ref_distance", "avg_final_ref_distance",
+        "avg_episode_reward",
         "avg_path_len", "avg_shortest_dist", "avg_stretch",
         "window_size", "policy_loss", "value_loss", "entropy", "lr",
     ]
@@ -1212,10 +1288,33 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
     recent_no_oracle_final_objective: deque[float] = deque(maxlen=config.running_avg_window)
     recent_visible_gradient_final_objective: deque[float] = deque(maxlen=config.running_avg_window)
     recent_final_ref_distance: deque[float] = deque(maxlen=config.running_avg_window)
+    recent_episode_reward: deque[float] = deque(maxlen=config.running_avg_window)
+    episode_reward_accum = np.zeros(config.n_env, dtype=np.float64)
     all_path_lengths: list[float] = []
     all_shortest_dists: list[float] = []
+    success_steps: list[int] = []
     success_path_lengths: list[float] = []
     failure_path_lengths: list[float] = []
+    energy_evaluation_traces: dict[str, dict[str, object]] = {
+        "rl_hidden_gradient": _init_energy_evaluation_trace(
+            OPTIMIZATION_METHOD_LABELS["rl_hidden_gradient"]
+        ),
+    }
+    if config.enable_baselines:
+        energy_evaluation_traces["gd"] = _init_energy_evaluation_trace(
+            OPTIMIZATION_METHOD_LABELS["gd"]
+        )
+        energy_evaluation_traces["adam"] = _init_energy_evaluation_trace(
+            OPTIMIZATION_METHOD_LABELS["adam"]
+        )
+    if no_oracle_env is not None:
+        energy_evaluation_traces["rl_no_oracle"] = _init_energy_evaluation_trace(
+            OPTIMIZATION_METHOD_LABELS["rl_no_oracle"]
+        )
+    if visible_gradient_env is not None:
+        energy_evaluation_traces["rl_visible_oracle"] = _init_energy_evaluation_trace(
+            OPTIMIZATION_METHOD_LABELS["rl_visible_oracle"]
+        )
 
     print(f"Training PPO agent...")
 
@@ -1241,6 +1340,8 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                 visible_gradient_buffer.reset()
 
             for _ in range(config.rollout_len):
+                initial_xy_snapshot = env.initial_xy.copy()
+                horizon_snapshot = env.horizons.copy()
                 token_t, dist_t, step_t = obs_to_tensors(obs, device)
                 with torch.no_grad():
                     actions_t, logprob_t, values_t, next_recurrent_state = model.act(
@@ -1254,6 +1355,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     recurrent_state_np = recurrent_state.cpu().numpy()
 
                 next_obs, rewards, dones, infos = env.step(actions)
+                episode_reward_accum += rewards.astype(np.float64)
                 normalized_rewards, reward_returns = normalize_rewards_with_running_returns(
                     rewards=rewards, dones=dones, returns_tracker=reward_returns,
                     returns_rms=reward_returns_rms, gamma=config.gamma, clip_abs=reward_norm_clip,
@@ -1266,6 +1368,13 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     done_mask = torch.as_tensor(dones, device=device, dtype=torch.bool)
                     recurrent_state[done_mask] = 0.0
                 obs = next_obs
+                step_energies = np.asarray(
+                    [float(info.get("energy_raw", float("nan"))) for info in infos],
+                    dtype=np.float64,
+                )
+                _append_energy_evaluation_trace(
+                    energy_evaluation_traces["rl_hidden_gradient"], step_energies
+                )
                 step_increment = config.n_env
                 total_steps += step_increment
                 progress.update(step_increment)
@@ -1297,6 +1406,13 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                         no_oracle_recurrent_state = no_next_rs.clone()
                         no_oracle_recurrent_state[torch.as_tensor(no_dones, device=device, dtype=torch.bool)] = 0.0
                     no_oracle_obs = no_next_obs
+                    no_step_energies = np.asarray(
+                        [float(info.get("energy_raw", float("nan"))) for info in no_infos],
+                        dtype=np.float64,
+                    )
+                    _append_energy_evaluation_trace(
+                        energy_evaluation_traces["rl_no_oracle"], no_step_energies
+                    )
                     for no_env_idx in np.where(no_dones)[0]:
                         no_info = no_infos[int(no_env_idx)]
                         if not no_info.get("episode_done", False):
@@ -1335,6 +1451,13 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                         visible_gradient_recurrent_state = vg_next_rs.clone()
                         visible_gradient_recurrent_state[torch.as_tensor(vg_dones, device=device, dtype=torch.bool)] = 0.0
                     visible_gradient_obs = vg_next_obs
+                    vg_step_energies = np.asarray(
+                        [float(info.get("energy_raw", float("nan"))) for info in vg_infos],
+                        dtype=np.float64,
+                    )
+                    _append_energy_evaluation_trace(
+                        energy_evaluation_traces["rl_visible_oracle"], vg_step_energies
+                    )
                     for vg_env_idx in np.where(vg_dones)[0]:
                         vg_info = vg_infos[int(vg_env_idx)]
                         if not vg_info.get("episode_done", False):
@@ -1362,7 +1485,21 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     final_ref_distance = float(info.get("final_ref_distance", float("nan")))
 
                     recent_success.append(success)
+                    recent_episode_reward.append(float(episode_reward_accum[int(env_index)]))
+                    episode_reward_accum[int(env_index)] = 0.0
                     if env.compute_episode_baselines:
+                        gd_trace = env.rollout_baseline_energy_trace(
+                            start_xy=initial_xy_snapshot[int(env_index)],
+                            horizon=int(horizon_snapshot[int(env_index)]),
+                            env_index=int(env_index),
+                        )
+                        adam_trace = env.rollout_adam_baseline_energy_trace(
+                            start_xy=initial_xy_snapshot[int(env_index)],
+                            horizon=int(horizon_snapshot[int(env_index)]),
+                            env_index=int(env_index),
+                        )
+                        _append_energy_evaluation_trace(energy_evaluation_traces["gd"], gd_trace)
+                        _append_energy_evaluation_trace(energy_evaluation_traces["adam"], adam_trace)
                         bl_succ = 1.0 if np.isfinite(baseline_fo) and baseline_fo <= env.success_threshold else 0.0
                         adam_succ = 1.0 if np.isfinite(adam_fo) and adam_fo <= env.success_threshold else 0.0
                         recent_baseline_success.append(bl_succ)
@@ -1381,6 +1518,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                     all_shortest_dists.append(shortest_dist)
                     if success >= 0.5:
                         success_path_lengths.append(episode_len)
+                        success_steps.append(int(episode_len))
                     else:
                         failure_path_lengths.append(episode_len)
                     if "stretch" in info:
@@ -1407,6 +1545,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                         "avg_visible_gradient_final_objective": float(np.mean(recent_visible_gradient_final_objective)) if recent_visible_gradient_final_objective else float("nan"),
                         "final_ref_distance": float(final_ref_distance),
                         "avg_final_ref_distance": float(np.mean(recent_final_ref_distance)) if recent_final_ref_distance else float("nan"),
+                        "avg_episode_reward": float(np.mean(recent_episode_reward)) if recent_episode_reward else float("nan"),
                         "avg_path_len": float(np.mean(recent_path_len)),
                         "avg_shortest_dist": float(np.mean(recent_shortest_dist)),
                         "avg_stretch": float(np.mean(recent_stretch)) if recent_stretch else float("nan"),
@@ -1428,6 +1567,11 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
                             "success_rate": float(row["success_rate"]),
                             "avg_final_objective": float(row["avg_final_objective"]),
                         })
+
+                    lc_episodes.append(int(total_episodes))
+                    lc_success_rates.append(float(row["success_rate"]))
+                    lc_avg_rewards.append(float(row["avg_episode_reward"]))
+                    lc_avg_objectives.append(float(row["avg_final_objective"]))
 
                     writer.writerow(row)
                     csv_file.flush()
@@ -1499,6 +1643,22 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
             output_dir=run_dir,
             title_prefix=f"Alanine Kmap={config.K_map}, {config.oracle_mode}, {config.sensing}",
         )
+        plot_learning_curves(
+            episodes=lc_episodes,
+            success_rates=lc_success_rates,
+            avg_rewards=lc_avg_rewards,
+            avg_objectives=lc_avg_objectives,
+            output_path=run_dir / "learning_curves.png",
+            title_prefix=f"Alanine Kmap={config.K_map}, {config.oracle_mode}, {config.sensing}",
+            window=config.running_avg_window,
+        )
+        plot_cumulative_success_by_step(
+            success_steps=success_steps,
+            total_episodes=total_episodes,
+            max_horizon=config.max_horizon,
+            output_path=run_dir / "cumulative_success_by_step.png",
+            title_prefix=f"Alanine Kmap={config.K_map}, {config.oracle_mode}, {config.sensing}",
+        )
         maybe_save_trajectory_plot(
             model=model, env=env, device=device,
             no_oracle_model=no_oracle_model,
@@ -1531,6 +1691,13 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         "episodes": total_episodes,
     }
 
+    energy_evaluation_trace_payload = _serialize_energy_evaluation_traces(
+        energy_evaluation_traces,
+        global_min_energy=float(env.global_min_energy),
+    )
+    with (run_dir / "energy_evaluation_traces.json").open("w", encoding="utf-8") as handle:
+        json.dump(energy_evaluation_trace_payload, handle, indent=2)
+
     with (run_dir / "summary.json").open("w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
 
@@ -1540,6 +1707,7 @@ def run_training(config: TrainConfig, return_artifacts: bool = False) -> dict:
         "config": asdict(config),
         "optimization_curves": optimization_eval,
         "baseline_lr_tuning": baseline_lr_tuning_result,
+        "energy_evaluation_traces": energy_evaluation_trace_payload,
     }
     if return_artifacts:
         output["model"] = model
